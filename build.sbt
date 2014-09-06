@@ -1,5 +1,7 @@
 import policy.building._
 
+cancelable in Global := true
+
 def policyGlobalSettings = Seq(
     organization in ThisBuild :=  PolicyOrg,
              onLoad in Global ~=  chain(ScopedShow.dump),

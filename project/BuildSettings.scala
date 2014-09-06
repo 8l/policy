@@ -22,14 +22,14 @@ trait Depends {
   // lazy val asm = RootProject(uri("git://github.com/paulp/asm.git#scala-fixes"))
   // def asm = "org.ow2.asm" % "asm-debug-all" % "5.0.3"
 
-  def spire         = "org.spire-math"                 %%          "spire"           % "0.7.5"
+  def spire         = "org.spire-math"                 %%          "spire"           % "0.8.2"
   def diffutils     = "com.googlecode.java-diff-utils" %         "diffutils"         % "1.3.0"
   def jline         = "jline"                          %           "jline"           %  "2.12"
   def slf4jApi      = "org.slf4j"                      %         "slf4j-api"         % "1.7.7"
   def logback       = "ch.qos.logback"                 %      "logback-classic"      % "1.1.2"
   def scalaParsers  = "org.scala-lang.modules"         %% "scala-parser-combinators" % "1.0.1"
   def scalaXml      = "org.scala-lang.modules"         %%        "scala-xml"         % "1.0.2"
-  def scalacheck    = "org.scalacheck"                 %%        "scalacheck"        % "1.11.4"
+  def scalacheck    = "org.scalacheck"                 %%        "scalacheck"        % "1.11.5"
   def testInterface = SbtOrg                           %       "test-interface"      %  "1.0"
 }
 
@@ -80,7 +80,7 @@ private object projectSettings {
   // Settings added to every project.
   def universal = bintraySettings ++ List(
                            name  ~=  (dash(PolicyName, _)),
-                        version  :=  "1.0.0-M4",
+                        version  :=  "1.0.0-M6",
                    scalaVersion  :=  ScalaKnownVersion,
              scalaBinaryVersion  :=  "2.11",
                        licenses  :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
