@@ -95,6 +95,8 @@ private object projectSettings {
               ivyConfigurations  +=  ScalaTool,
                       resolvers  +=  bintrayPaulpResolver,
        unmanagedJars in Compile <++= buildLevelJars.task,
+       unmanagedJars in Compile  +=  toolsJar,
+          unmanagedJars in Test  +=  toolsJar,
                   scalaInstance <<=  scalaInstance in ThisBuild
   )
 
@@ -118,7 +120,8 @@ private object projectSettings {
       previousArtifact  :=  Some(scalaLibrary)
   )
 
-  private def replJar = (artifactPath in (Compile, packageBin) in 'repl) |> Attributed.blank
+  private def replJar  = (artifactPath in (Compile, packageBin) in 'repl) |> Attributed.blank
+  private def toolsJar = file(scala.util.Properties.javaHome).getParentFile / "lib" / "tools.jar"
 
   def root = List(
                                  name  :=  PolicyName,
@@ -129,7 +132,6 @@ private object projectSettings {
            initialCommands in console  :=  "import scala.reflect.runtime.universe._",
     initialCommands in consoleProject  :=  "import policy.building._",
                          watchSources <++= sbtFilesInBuild.task,
-             unmanagedJars in Compile  +=  file(scala.util.Properties.javaHome).getParentFile / "lib" / "tools.jar",
                          watchSources <++= sourceFilesInProject.task,
                     bootstrapModuleId  :=  chooseBootstrap,
                   libraryDependencies <+=  bootstrapModuleId |> (_ % ScalaTool.name),
