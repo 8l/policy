@@ -129,6 +129,7 @@ private object projectSettings {
            initialCommands in console  :=  "import scala.reflect.runtime.universe._",
     initialCommands in consoleProject  :=  "import policy.building._",
                          watchSources <++= sbtFilesInBuild.task,
+             unmanagedJars in Compile  +=  file(scala.util.Properties.javaHome).getParentFile / "lib" / "tools.jar",
                          watchSources <++= sourceFilesInProject.task,
                     bootstrapModuleId  :=  chooseBootstrap,
                   libraryDependencies <+=  bootstrapModuleId |> (_ % ScalaTool.name),
