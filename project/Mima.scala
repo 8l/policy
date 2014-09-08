@@ -3,6 +3,7 @@ package building
 
 import sbt._, Keys._
 import com.typesafe.tools.mima.core._
+import psp.libsbt._
 
 object MimaPolicy {
   private val removedPackages = wordSet("""

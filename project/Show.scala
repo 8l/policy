@@ -16,7 +16,7 @@ object ScopedShow {
 
 // Making sense of sbt's scoped key clusterfuck.
 class ScopedShow[A](ws: State, set: Setting[A]) {
-  val ThisBuildUri = ws(PolicyKeys.buildBase).toURI
+  val ThisBuildUri = ws(psp.libsbt.key.buildBase).toURI
   val skey         = set.key
   val key          = skey.scopedKey
   def attrKey      = key.key

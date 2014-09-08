@@ -2,7 +2,8 @@ package policy
 package building
 
 import sbt._, Keys._
-import complete.DefaultParsers._
+// import complete.DefaultParsers._
+import psp.libsbt._
 
 object PolicyKeys {
   val repl              = inputKey[Unit]("run policy repl")
@@ -10,21 +11,12 @@ object PolicyKeys {
   val settingsDumpFile  = settingKey[File]("file into which to record all sbt settings") in ThisBuild
   val bootstrapModuleId = settingKey[ModuleID]("module id of bootstrap compiler") in ThisBuild
   val jarPaths          = inputKey[Classpath]("jars in given configuration")
-
-  val buildBase: FileKey   = baseDirectory in ThisBuild
-  val projectBase: FileKey = baseDirectory in ThisProject
-  val mainSource: FileKey  = scalaSource in Compile
-
-  val mainOptions: TaskKey[Seq[String]] = scalacOptions in Compile
-  val mainSourceDirs                    = unmanagedSourceDirectories in Compile
-  val mainTestDirs                      = unmanagedSourceDirectories in Test
 }
 
 trait BuildTasks {
-  private def testJavaOptions  = partestProperties map ("-Xmx1g" +: _.commandLineArgs)
-
-  private def compilePath: TaskOf[Seq[File]] = (dependencyClasspath in Compile) |> (_.files filter isJar)
-  private def explode(f: File, d: File) = IO.unzip(f, d, isSourceName _).toSeq
+  private def testJavaOptions                = partestProperties map ("-Xmx1g" +: _.commandLineArgs)
+  private def compilePath: TaskOf[Seq[File]] = dependencyClasspath in Compile map (_.files filter isJar)
+  private def explode(f: File, d: File)      = IO.unzip(f, d, isSourceName _).toSeq
 
   def createUnzipTask: TaskOf[Seq[File]] = Def task (compilePath.value flatMap (f => explode(f, sourceManaged.value / "compat")))
 

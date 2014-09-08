@@ -25,6 +25,8 @@ trait ReflectiveCommands {
 trait Bootstrap {
   self: PolicyPackage =>
 
+  private def runSlurp(cmd: String): String = scala.sys.process.Process(cmd).lines.mkString
+
   // Creates a fresh version number, publishes bootstrap jars with that number to the local repository.
   // Records the version in project/local.properties where it has precedence over build.properties.
   // Reboots sbt under the new jars.
@@ -39,7 +41,7 @@ trait Bootstrap {
       case Nil                  => localProps -> ws(PolicyKeys.bootstrapModuleId)
       case "local" :: v :: Nil  => localProps -> (PolicyOrg % "bootstrap-compiler" % v)
       case "remote" :: v :: Nil => buildProps -> (PolicyOrg % "bootstrap-compiler" % v)
-      case _                    => return fail(args mkString ", ")
+      case _                    => return psp.libsbt.fail(args mkString ", ")
     }
     updateBootstrapModule(props, newModule)
     ws(streams).log.info(s"Updating $BootstrapModuleProperty to $newModule in " + props.filename)

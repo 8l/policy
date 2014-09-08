@@ -2,6 +2,7 @@ package policy
 package building
 
 import sbt._, Keys._
+import psp.libsbt._
 
 trait Runners {
   def partestProperties = Def task ImmutableProperties(
@@ -10,14 +11,19 @@ trait Runners {
     "partest.colors"           -> "256",
     "partest.threads"          -> (numCores - 1).toString,
     "partest.git_diff_options" -> "--word-diff",
-    "partest.basedir"          -> PolicyKeys.buildBase.value.getPath,
+    "partest.basedir"          -> key.buildBase.value.getPath,
     "partest.root"             -> testBase.value.getPath,
     "partest.testlib"          -> unmanagedBase.value.getPath
   )
 
-  def forkPartest  = Def task { ForkConfig(PartestRunnerClass, props = partestProperties.value) addJvmOptions ("-Xmx1g", "-cp", testClasspathString.value) }
-  def forkRepl     = Def task { ForkConfig(ReplRunnerClass, props = newProps(NoTraceSuppression -> ""), programArgs = Seq("-usejavacp")) addJvmOptions ("-cp", compilerClasspathString.value) }
-  def forkCompiler = Def task { ForkConfig(CompilerRunnerClass, programArgs = Seq("-usejavacp")) addJvmOptions ("-cp", compilerClasspathString.value) }
+  def isScalaJar(f: jFile) = f.getPath split "/" contains ScalaOrg
+
+  private def forkConfig(mainClass: String, props: ImmutableProperties, programArgs: String*): ForkConfig =
+    ForkConfig(mainClass, props, programArgs.toList, stdForkOptions)
+
+  def forkPartest  = Def task ( forkConfig(PartestRunnerClass, partestProperties.value)                       addJvmOptions ("-Xmx1g", "-cp", testClasspathString.value) )
+  def forkRepl     = Def task ( forkConfig(ReplRunnerClass, newProps(NoTraceSuppression -> ""), "-usejavacp") addJvmOptions ("-cp", compilerClasspathString.value) )
+  def forkCompiler = Def task ( forkConfig(CompilerRunnerClass, newProps(), "-usejavacp")                     addJvmOptions ("-cp", compilerClasspathString.value) )
 
   def asInputTask(task: TaskOf[ForkConfig]): InputTaskOf[Int] = Def inputTask task.value(spaceDelimited("<arg>").parsed: _*)
 

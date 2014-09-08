@@ -11,6 +11,10 @@ addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.6")
 
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.6")
 
-addSbtPlugin("org.improving" % "psp-libsbt" % "0.3.1-M4")
-
 addSbtPlugin("com.typesafe.sbt" % "sbt-javaversioncheck" % "0.1.0")
+
+lazy val root = project in file(".") dependsOn libSbt
+
+lazy val libSbt = file("../libsbt")
+
+//addSbtPlugin("org.improving" % "psp-libsbt" % "0.3.1-M4")

@@ -33,7 +33,7 @@ trait Depends {
   def testInterface = SbtOrg                           %       "test-interface"      %  "1.0"
 }
 
-final class ProjectOps(val p: Project) {
+final class PolicyProjectOps(val p: Project) {
   def addMima(m: ModuleID) = p also fullMimaSettings(m)
 
   def fullMimaSettings(m: ModuleID) = mimaDefaultSettings ++ Seq(
@@ -72,7 +72,7 @@ private object projectSettings {
   def asmVersion    = "5.0.4-SNAPSHOT"
   def asmJarSetting = fromBase(s"lib/asm-$asmVersion.jar")
   def asmSettings   = Seq(asmJarKey <<= asmJarSetting.task) ++ addArtifact(Artifact("asm"), asmJarKey).settings
-  def asmAttributed = asmJarSetting |> (newCpElem(_, Artifact("asm"), asm, ScalaTool))
+  def asmAttributed = asmJarSetting map (newCpElem(_, Artifact("asm"), asm, ScalaTool))
 
   // Assembled settings for projects which produce an artifact.
   def codeProject(others: Setting[_]*) = compiling ++ publishing ++ others
@@ -120,7 +120,7 @@ private object projectSettings {
       previousArtifact  :=  Some(scalaLibrary)
   )
 
-  private def replJar  = (artifactPath in (Compile, packageBin) in 'repl) |> Attributed.blank
+  private def replJar  = artifactPath in (Compile, packageBin) in 'repl map Attributed.blank
   private def toolsJar = file(scala.util.Properties.javaHome).getParentFile / "lib" / "tools.jar"
 
   def root = List(
@@ -134,7 +134,7 @@ private object projectSettings {
                          watchSources <++= sbtFilesInBuild.task,
                          watchSources <++= sourceFilesInProject.task,
                     bootstrapModuleId  :=  chooseBootstrap,
-                  libraryDependencies <+=  bootstrapModuleId |> (_ % ScalaTool.name),
+                  libraryDependencies <+=  bootstrapModuleId map (_ % ScalaTool.name),
            scalaInstance in ThisBuild <<=  scalaInstanceFromModuleIDTask,
                              commands ++=  bootstrapCommands
   )
