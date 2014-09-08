@@ -3,6 +3,7 @@ package building
 
 import sbt._, Keys._
 import java.lang.reflect.Method
+import psp.libsbt._
 
 trait ReflectiveCommands {
   private val StringClass = classOf[String]
@@ -24,27 +25,24 @@ trait ReflectiveCommands {
 trait Bootstrap {
   self: PolicyPackage =>
 
-  def bootstrapCommands = Seq(
-    Command.command("publishLocalBootstrap")(publishLocalBootstrap),
-    Command.command("publishBootstrap")(publishBootstrap),
-    Command.args("saveBootstrapVersion", "<version>")((state, args) => saveBootstrapVersion(args)(state))
-  )
-
   // Creates a fresh version number, publishes bootstrap jars with that number to the local repository.
   // Records the version in project/local.properties where it has precedence over build.properties.
   // Reboots sbt under the new jars.
-  private val publishLocalBootstrap: StateMap = commonBootstrap(isLocal = true, Nil)
-  private val publishBootstrap: StateMap      = commonBootstrap(isLocal = false, applyProjects(_ + "/publish"))
+  def bootstrapCommands = Seq(
+    Command.command("publishLocalBootstrap")(commonBootstrap(_, isLocal = true, Nil)),
+    Command.command("publishBootstrap")(commonBootstrap(_, isLocal = false, applyProjects(_ + "/publish"))),
+    Command.args("saveBootstrapVersion", "<version>")(saveBootstrapVersion)
+  )
 
-  private def saveBootstrapVersion(args: Seq[String]): StateMap = WState { ws =>
+  private def saveBootstrapVersion(ws: State, args: Seq[String]): State = {
     val (props, newModule) = args.toList match {
       case Nil                  => localProps -> ws(PolicyKeys.bootstrapModuleId)
       case "local" :: v :: Nil  => localProps -> (PolicyOrg % "bootstrap-compiler" % v)
       case "remote" :: v :: Nil => buildProps -> (PolicyOrg % "bootstrap-compiler" % v)
-      case _                    => return _.fail
+      case _                    => return fail(args mkString ", ")
     }
     updateBootstrapModule(props, newModule)
-    ws.info(s"Updating $BootstrapModuleProperty to $newModule in " + props.filename)
+    ws(streams).log.info(s"Updating $BootstrapModuleProperty to $newModule in " + props.filename)
     ws
   }
 
@@ -61,7 +59,7 @@ trait Bootstrap {
 
   private def applyProjects[A](f: String => A): Seq[A] = Seq("library", "compiler") map f
 
-  private def commonBootstrap(isLocal: Boolean, commands: Seq[String]): StateMap = WState { ws =>
+  private def commonBootstrap(ws: State, isLocal: Boolean, commands: Seq[String]): State = {
     val newVersion = ws(version) match {
       case v if isLocal => dash(v takeWhile (_ != '-'), runSlurp("bin/unique-version"))
       case v            => v
@@ -69,6 +67,6 @@ trait Bootstrap {
     val saveCommand = "saveBootstrapVersion %s %s".format( if (isLocal) "local" else "remote" , newVersion )
     val newCommands = applyProjects(_ + "/publishLocal") ++ commands :+ saveCommand :+ "reboot full"
 
-    ws set bootstrapSettings(newVersion) run newCommands
+    ws set (bootstrapSettings(newVersion): _*) run (newCommands: _*)
   }
 }

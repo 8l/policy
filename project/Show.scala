@@ -2,48 +2,20 @@ package policy
 package building
 
 import sbt._, Keys._
-
-// Encapsulation of sbt state transformations.
-object WState {
-  def look(f: WState => Unit): StateMap    = apply(s => doto(s)(f))
-  def apply(f: WState => WState): StateMap = s => f(new WState(s)).state
-}
-final class WState(val state: State) {
-  implicit def implicitState: State = state
-  val extracted = Project extract state
-  import extracted._
-
-  def settings     = structure.settings
-  def relation     = Project.relation(structure, true)
-  def scopedKeys   = relation._1s.toSeq
-  def attrKeys     = scopedKeys map (_.key)
-  def projectScope = Load projectScope currentRef
-
-  def info(msg: => String) = state.log.info(msg)
-
-  def apply[A](key: SettingKey[A]): A = extracted get key
-  def apply[A](key: TaskKey[A]): A    = get[A](key) | sys.error(s"$key failed")
-
-  def get[A](key: TaskKey[A]): Option[A] = Project.evaluateTask(key, state) match {
-    case None           => None
-    case Some(Inc(inc)) => Incomplete.show(inc.tpe) ; None
-    case Some(Value(v)) => Some(v)
-  }
-  def map(f: State => State): WState     = new WState(f(state))
-  def set(settings: SettingSeq): WState  = new WState(extracted.append(settings, state))
-  def run(commands: Seq[String]): WState = new WState(commands ::: state)
-}
+import psp.libsbt._
 
 object ScopedShow {
-  val dump: StateMap = WState look { ws =>
+  // currentState.attributes(sessionSettings).original
+  def dump(ws: State): State = {
     val file  = ws(PolicyKeys.settingsDumpFile)
-    val shows = ws.settings map (k => new ScopedShow(ws, k)) filter (_.hasPrintableValue) sortBy (_.score)
+    val shows = ws.structure.settings map (k => new ScopedShow(ws, k)) filter (_.hasPrintableValue) sortBy (_.score)
     IO.write(file, shows.map(_.toString).distinct.mkString("\n") + "\n")
+    ws
   }
 }
 
 // Making sense of sbt's scoped key clusterfuck.
-class ScopedShow[A](ws: WState, set: Setting[A]) {
+class ScopedShow[A](ws: State, set: Setting[A]) {
   val ThisBuildUri = ws(PolicyKeys.buildBase).toURI
   val skey         = set.key
   val key          = skey.scopedKey
