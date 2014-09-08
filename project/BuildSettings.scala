@@ -1,37 +1,7 @@
 package policy
 package building
 
-import sbt._, Keys._, PolicyKeys._
-import psp.libsbt._
-import Opts.resolver._
-import Classpaths.{ packaged, publishConfig }
-import bintray.Plugin.{ bintraySettings, bintrayPublishSettings }
-import com.typesafe.tools.mima.plugin.MimaKeys
-
-trait Depends {
-  def bintrayPaulpResolver = "bintray/paulp" at "https://dl.bintray.com/paulp/maven"
-
-  def sbtModuleId(name: String)   = SbtOrg    %          name          %  SbtKnownVersion
-  def scalaModuleId(name: String) = ScalaOrg  % dash(ScalaName, name)  % ScalaKnownVersion
-
-  def scalaLibrary  = scalaModuleId("library")
-  def scalaCompiler = scalaModuleId("compiler")
-
-  // The source dependency has a one-character change vs. asm-debug-all 5.0.3.
-  // Not using at present in favor of a binary blob in ~/lib.
-  // lazy val asm = RootProject(uri("git://github.com/paulp/asm.git#scala-fixes"))
-  // def asm = "org.ow2.asm" % "asm-debug-all" % "5.0.3"
-
-  def spire         = "org.spire-math"                 %%          "spire"           % "0.8.2"
-  def diffutils     = "com.googlecode.java-diff-utils" %         "diffutils"         % "1.3.0"
-  def jline         = "jline"                          %           "jline"           %  "2.12"
-  def slf4jApi      = "org.slf4j"                      %         "slf4j-api"         % "1.7.7"
-  def logback       = "ch.qos.logback"                 %      "logback-classic"      % "1.1.2"
-  def scalaParsers  = "org.scala-lang.modules"         %% "scala-parser-combinators" % "1.0.1"
-  def scalaXml      = "org.scala-lang.modules"         %%        "scala-xml"         % "1.0.2"
-  def scalacheck    = "org.scalacheck"                 %%        "scalacheck"        % "1.11.5"
-  def testInterface = SbtOrg                           %       "test-interface"      %  "1.0"
-}
+import sbt._, Keys._, psp.libsbt._
 
 final class PolicyProjectOps(val p: Project) {
   def addMima(m: ModuleID) = p also fullMimaSettings(m)
@@ -42,7 +12,7 @@ final class PolicyProjectOps(val p: Project) {
       previousArtifact :=  Some(m)
   )
 
-  def rootSetup                           = (p in file(".")).setup.noArtifacts
+  def rootSetup                           = (p in file(".")).setup.noArtifacts.alsoToolsJar
   def setup                               = p also projectSettings(p.id)
   def deps(ms: ModuleID*)                 = p settings (libraryDependencies ++= ms.toSeq)
   def intransitiveDeps(ms: ModuleID*)     = deps(ms map (_.intransitive()): _*)
@@ -53,7 +23,6 @@ final class PolicyProjectOps(val p: Project) {
 
 private object projectSettings {
   final val Root     = "root"
-  // final val Repl     = "repl"
   final val Compiler = "compiler"
   final val Library  = "library"
   final val Compat   = "compat"
@@ -79,25 +48,26 @@ private object projectSettings {
 
   // Settings added to every project.
   def universal = bintraySettings ++ List(
-                           name  ~=  (dash(PolicyName, _)),
-                        version  :=  "1.0.0-M6",
-                   scalaVersion  :=  ScalaKnownVersion,
-             scalaBinaryVersion  :=  "2.11",
-                       licenses  :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-               autoScalaLibrary  :=  false,
-                     crossPaths  :=  false,
-           managedScalaInstance  :=  false,
-                  sourcesInBase  :=  false,
-                    logBuffered  :=  false,
-                    showSuccess  :=  false,
-                     showTiming  :=  true,
-                     traceLevel  :=  20,
-              ivyConfigurations  +=  ScalaTool,
-                      resolvers  +=  bintrayPaulpResolver,
-       unmanagedJars in Compile <++= buildLevelJars.task,
-       unmanagedJars in Compile  +=  toolsJar,
-          unmanagedJars in Test  +=  toolsJar,
-                  scalaInstance <<=  scalaInstance in ThisBuild
+                        name ~=  (dash(PolicyName, _)),
+                organization :=  PolicyOrg,
+                     version :=  "1.0.0-M6",
+                scalaVersion :=  ScalaKnownVersion,
+          scalaBinaryVersion :=  "2.11",
+                    licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+            autoScalaLibrary :=  false,
+                  crossPaths :=  false,
+        managedScalaInstance :=  false,
+               sourcesInBase :=  false,
+                 logBuffered :=  false,
+                 showSuccess :=  false,
+                  showTiming :=  true,
+                  traceLevel :=  20,
+           ivyConfigurations +=  ScalaTool,
+                   resolvers +=  paulp.maven,
+                    key.jars ++= buildJars.value,
+               scalaInstance <<= scalaInstance in ThisBuild,
+       cancelable in compile :=  true,
+             fork in compile :=  true
   )
 
   def compiler = codeProject(
@@ -109,8 +79,6 @@ private object projectSettings {
                  testOnly <<=  runTests
   )
 
-  // def repl = codeProject(mainSource <<= inSrc(Repl))
-
   def compat   = List(sourceGenerators in Compile <+= createUnzipTask)
 
   def library = codeProject(
@@ -120,30 +88,26 @@ private object projectSettings {
       previousArtifact  :=  Some(scalaLibrary)
   )
 
-  private def replJar  = artifactPath in (Compile, packageBin) in 'repl map Attributed.blank
-  private def toolsJar = file(scala.util.Properties.javaHome).getParentFile / "lib" / "tools.jar"
+  private def replJar  = artifactPath in (Compile, packageBin) in 'repl mapValue Attributed.blank
 
   def root = List(
-                                 name  :=  PolicyName,
-                             jarPaths  :=  printResult("jars")(jarPathsTask.evaluated),
-                             getScala <<=  scalaInstanceTask,
-                      PolicyKeys.repl <<=  asInputTask(forkRepl),
-                                  run <<=  asInputTask(forkCompiler),
-           initialCommands in console  :=  "import scala.reflect.runtime.universe._",
-    initialCommands in consoleProject  :=  "import policy.building._",
-                         watchSources <++= sbtFilesInBuild.task,
-                         watchSources <++= sourceFilesInProject.task,
-                    bootstrapModuleId  :=  chooseBootstrap,
-                  libraryDependencies <+=  bootstrapModuleId map (_ % ScalaTool.name),
-           scalaInstance in ThisBuild <<=  scalaInstanceFromModuleIDTask,
-                             commands ++=  bootstrapCommands
+                                 name :=  PolicyName,
+                  PolicyKeys.getScala <<= scalaInstanceTask,
+                      PolicyKeys.repl <<= asInputTask(forkRepl),
+                                  run <<= asInputTask(forkCompiler),
+           initialCommands in console :=  "import scala.reflect.runtime.universe._",
+    initialCommands in consoleProject :=  "import policy.building._",
+                         watchSources ++= sbtFilesInBuild.value ++ sourceFilesInProject.value,
+         PolicyKeys.bootstrapModuleId :=  chooseBootstrap,
+                  libraryDependencies <+= PolicyKeys.bootstrapModuleId mapValue (_ % ScalaTool.name),
+           scalaInstance in ThisBuild <<= scalaInstanceFromModuleIDTask,
+                             commands ++= bootstrapCommands
   )
   def publishing = List(
                      checksums in publishLocal := Nil,
-                             publishMavenStyle := true,
       publishArtifact in (Compile, packageDoc) := false,
       publishArtifact in (Compile, packageSrc) := false,
-                     publishLocalConfiguration ~= (p => publishConfig(p.artifacts, p.ivyFile, p.checksums, p.resolverName, logging = UpdateLogging.Quiet, overwrite = false)),
+                     publishLocalConfiguration ~= (p => Classpaths.publishConfig(p.artifacts, p.ivyFile, p.checksums, p.resolverName, logging = UpdateLogging.Quiet, overwrite = false)),
                            updateConfiguration ~= (uc => new UpdateConfiguration(uc.retrieve, uc.missingOk, logging = UpdateLogging.Quiet))
   )
   def compiling = List(
@@ -154,4 +118,31 @@ private object projectSettings {
         scalacOptions in (Test, compile) :=  Seq("-Xlint"),
                               incOptions :=  stdIncOptions
   )
+
+  private def testJavaOptions                = partestProperties map ("-Xmx1g" +: _.commandLineArgs)
+  private def compilePath: TaskOf[Seq[File]] = dependencyClasspath in Compile map (_.files filter isJar)
+  private def explode(f: File, d: File)      = IO.unzip(f, d, isSourceName _).toSeq
+
+  def createUnzipTask: TaskOf[Seq[File]] = Def task (compilePath.value flatMap (f => explode(f, sourceManaged.value / "compat")))
+
+  def generateProperties(): TaskOf[Seq[File]] = Def task {
+    val id    = name.value split "[-]" last;
+    val file  = (resourceManaged in Compile).value / s"$id.properties"
+    val props = MutableProperties(file)
+    props("version.number")              = version.value
+    props("scala.version.number")        = scalaVersion.value
+    props("scala.binary.version.number") = scalaBinaryVersion.value
+    props("bootstrap.moduleid")          = PolicyKeys.bootstrapModuleId.value.toString
+    props.save()
+    Seq(file)
+  }
+
+  def runTestsWithArgs(args: List[String]): TaskOf[Int] = forkPartest map (_ apply (args: _*))
+  def runAllTests: TaskOf[Unit] = forkPartest map (_ apply "--all")
+  def runTests: InputTaskOf[Unit] = Def inputTask {
+    spaceDelimited("<arg>").parsed match {
+      case Nil  => forkPartest.value("--failed", "--show-diff") // testOnly with no args we'll take to mean --failed
+      case args => forkPartest.value(args: _*)
+    }
+  }
 }

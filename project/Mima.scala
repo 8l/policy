@@ -47,106 +47,10 @@ object MimaPolicy {
     filteredTail
   """)
 
-  // val methods       = wordSet("""
-  //   view par parCombiner
-  //   ++ -- toMap toSet toSeq toIterable toTraversable
-  //   scala$collection$mutable$SynchronizedBuffer$$super$++
-  //   Everything
-  // """)
-
   def isRemoved(name: String): Boolean = {
     def pkg = name take (name lastIndexOf '.')
     removedClasses(name) || removedPackages(pkg)
   }
-
-  // private val removedPackages = wordSet("""
-  //   scala.text
-  //   scala.concurrent
-  //   scala.collection.parallel
-  //   scala.collection.concurrent
-  //   scala.util.hashing
-  // """)
-
-  // private val removedClasses = wordSet("""
-  //   scala.Responder
-  //   scala.collection.CustomParallelizable
-  //   scala.collection.IterableProxy
-  //   scala.collection.IterableProxyLike
-  //   scala.collection.IterableView
-  //   scala.collection.IterableViewLike
-  //   scala.collection.JavaConversions
-  //   scala.collection.MapProxy
-  //   scala.collection.MapProxyLike
-  //   scala.collection.Parallel
-  //   scala.collection.Parallelizable
-  //   scala.collection.Searching
-  //   scala.collection.SeqProxy
-  //   scala.collection.SeqProxyLike
-  //   scala.collection.SeqView
-  //   scala.collection.SeqViewLike
-  //   scala.collection.SetProxy
-  //   scala.collection.SetProxyLike
-  //   scala.collection.TraversableProxy
-  //   scala.collection.TraversableProxyLike
-  //   scala.collection.TraversableView
-  //   scala.collection.TraversableViewLike
-  //   scala.collection.ViewMkString
-  //   scala.collection.generic.AtomicIndexFlag
-  //   scala.collection.generic.CanCombineFrom
-  //   scala.collection.generic.DefaultSignalling
-  //   scala.collection.generic.DelegatedContext
-  //   scala.collection.generic.DelegatedSignalling
-  //   scala.collection.generic.GenericParCompanion
-  //   scala.collection.generic.GenericParMapCompanion
-  //   scala.collection.generic.GenericParMapTemplate
-  //   scala.collection.generic.GenericParTemplate
-  //   scala.collection.generic.HasNewCombiner
-  //   scala.collection.generic.IdleSignalling
-  //   scala.collection.generic.ParFactory
-  //   scala.collection.generic.ParMapFactory
-  //   scala.collection.generic.ParSetFactory
-  //   scala.collection.generic.Signalling
-  //   scala.collection.generic.TaggedDelegatedContext
-  //   scala.collection.generic.VolatileAbort
-  //   scala.collection.immutable.IntMap
-  //   scala.collection.immutable.IntMapEntryIterator
-  //   scala.collection.immutable.IntMapIterator
-  //   scala.collection.immutable.IntMapKeyIterator
-  //   scala.collection.immutable.IntMapUtils
-  //   scala.collection.immutable.IntMapValueIterator
-  //   scala.collection.immutable.LongMap
-  //   scala.collection.immutable.LongMapEntryIterator
-  //   scala.collection.immutable.LongMapIterator
-  //   scala.collection.immutable.LongMapKeyIterator
-  //   scala.collection.immutable.LongMapUtils
-  //   scala.collection.immutable.LongMapValueIterator
-  //   scala.collection.immutable.MapProxy
-  //   scala.collection.immutable.SetProxy
-  //   scala.collection.immutable.StreamView
-  //   scala.collection.immutable.StreamViewLike
-  //   scala.collection.mutable.AVLIterator
-  //   scala.collection.mutable.AVLTree
-  //   scala.collection.mutable.BufferProxy
-  //   scala.collection.mutable.DefaultMapModel
-  //   scala.collection.mutable.ImmutableMapAdaptor
-  //   scala.collection.mutable.ImmutableSetAdaptor
-  //   scala.collection.mutable.IndexedSeqView
-  //   scala.collection.mutable.Leaf
-  //   scala.collection.mutable.LongMap
-  //   scala.collection.mutable.MapProxy
-  //   scala.collection.mutable.Node
-  //   scala.collection.mutable.PriorityQueueProxy
-  //   scala.collection.mutable.History
-  //   scala.collection.mutable.Subscriber
-  //   scala.collection.mutable.Publisher
-  //   scala.collection.mutable.QueueProxy
-  //   scala.collection.mutable.RevertibleHistory
-  //   scala.collection.mutable.SetProxy
-  //   scala.collection.mutable.StackProxy
-  //   scala.collection.mutable.Undoable
-  //   scala.collection.mutable.UnrolledBuffer
-  //   scala.text.DocGroup
-  // """)
 
   object HasName { def unapply(x: HasDeclarationName) = Some(x.decodedName) }
   object HasFullNames { def unapply(x: Iterable[ClassInfo]) = Some(x.toList map (_.fullName)) }
@@ -163,19 +67,16 @@ object MimaPolicy {
       ProblemFilters.exclude[MissingClassProblem](s"scala.$s$n$d")
   }
   private def deletedFilter: ProblemFilter = {
-
-    {
-      case MissingClassProblem(cl) if removedPackages exists (cl.fullName startsWith _ + ".") => false
-      case MissingClassProblem(cl) if removedClasses(cl.fullName split "[$#]" head)           => false
-      case p: MissingMethodProblem if p.affectedVersion == Problem.ClassVersion.Old           => false // adding methods okay with me
-      case MissingMethodProblem(HasName(name)) if removedMethods(name)                        => false
-      case MissingTypesProblem(_, HasFullNames(missing)) if missing forall isRemoved          => false
-      case IncompatibleMethTypeProblem(PackageOf("scala.sys.process"), _)                     => false // TODO - SyncVar
-      case IncompatibleMethTypeProblem(HasName(name), _) if removedMethods(name)              => false
-      case IncompatibleResultTypeProblem(HasName(name), _) if removedMethods(name)            => false
-      case UpdateForwarderBodyProblem(meth)                                                   => false
-      case _                                                                                  => true
-    }
+    case MissingClassProblem(cl) if removedPackages exists (cl.fullName startsWith _ + ".") => false
+    case MissingClassProblem(cl) if removedClasses(cl.fullName split "[$#]" head)           => false
+    case p: MissingMethodProblem if p.affectedVersion == Problem.ClassVersion.Old           => false // adding methods okay with me
+    case MissingMethodProblem(HasName(name)) if removedMethods(name)                        => false
+    case MissingTypesProblem(_, HasFullNames(missing)) if missing forall isRemoved          => false
+    case IncompatibleMethTypeProblem(PackageOf("scala.sys.process"), _)                     => false // TODO - SyncVar
+    case IncompatibleMethTypeProblem(HasName(name), _) if removedMethods(name)              => false
+    case IncompatibleResultTypeProblem(HasName(name), _) if removedMethods(name)            => false
+    case UpdateForwarderBodyProblem(meth)                                                   => false
+    case _                                                                                  => true
   }
   private def individualFilters = Vector(
     ProblemFilters.exclude[MissingMethodProblem]("scala.collection.Iterator.corresponds")

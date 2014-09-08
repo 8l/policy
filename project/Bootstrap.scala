@@ -1,26 +1,7 @@
 package policy
 package building
 
-import sbt._, Keys._
-import java.lang.reflect.Method
-import psp.libsbt._
-
-trait ReflectiveCommands {
-  private val StringClass = classOf[String]
-  private val StateClass  = classOf[State]
-  private def isCommand(m: Method) = m.getParameterTypes contains StateClass
-  private def methods = this.getClass.getDeclaredMethods.toList filter isCommand
-  private def call(m: Method)(args: Object*): State = m.invoke(this, args: _*).asInstanceOf[State]
-
-  def commands: List[Command] = methods flatMap { m =>
-    m.getParameterTypes.toList match {
-      case StateClass :: Nil                => Some(Command.command(m.getName)(s => call(m)(s)))
-      case StateClass :: StringClass :: Nil => Some(Command.single(m.getName)((s, a) => call(m)(s, a)))
-      case StateClass :: args :: Nil        => Some(Command.args(m.getName, m.getName)((s, as) => call(m)(s, as)))
-      case _                                => None
-    }
-  }
-}
+import sbt._, Keys._, psp.libsbt._
 
 trait Bootstrap {
   self: PolicyPackage =>
@@ -44,7 +25,7 @@ trait Bootstrap {
       case _                    => return psp.libsbt.fail(args mkString ", ")
     }
     updateBootstrapModule(props, newModule)
-    ws(streams).log.info(s"Updating $BootstrapModuleProperty to $newModule in " + props.filename)
+    ws(sLog).info(s"Updating $BootstrapModuleProperty to $newModule in " + props.filename)
     ws
   }
 

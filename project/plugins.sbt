@@ -13,6 +13,8 @@ addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.6")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-javaversioncheck" % "0.1.0")
 
+libraryDependencies += "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0"
+
 lazy val root = project in file(".") dependsOn libSbt
 
 lazy val libSbt = file("../libsbt")
