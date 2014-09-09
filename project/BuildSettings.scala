@@ -3,24 +3,6 @@ package building
 
 import sbt._, Keys._, psp.libsbt._
 
-final class PolicyProjectOps(val p: Project) {
-  def addMima(m: ModuleID) = p also fullMimaSettings(m)
-
-  def fullMimaSettings(m: ModuleID) = mimaDefaultSettings ++ Seq(
-    binaryIssueFilters ++= MimaPolicy.filters,
-                  test <<= MimaKeys.reportBinaryIssues,
-      previousArtifact :=  Some(m)
-  )
-
-  def rootSetup                           = (p in file(".")).setup.noArtifacts.alsoToolsJar
-  def setup                               = p also projectSettings(p.id)
-  def deps(ms: ModuleID*)                 = p settings (libraryDependencies ++= ms.toSeq)
-  def intransitiveDeps(ms: ModuleID*)     = deps(ms map (_.intransitive()): _*)
-  def intransitiveTestDeps(ms: ModuleID*) = deps(ms map (m => (m % "test").intransitive): _*)
-  def sbtDeps(ids: String*)               = intransitiveDeps(ids map sbtModuleId: _*)
-  def scalaDeps(ids: String*)             = intransitiveDeps(ids map scalaModuleId: _*)
-}
-
 private object projectSettings {
   final val Root     = "root"
   final val Compiler = "compiler"
@@ -29,7 +11,6 @@ private object projectSettings {
 
   def apply(id: String): SettingSeq = universal ++ (id match {
     case Root     => root
-    // case Repl     => repl
     case Compat   => compat
     case Compiler => compiler
     case Library  => library
@@ -88,8 +69,6 @@ private object projectSettings {
       previousArtifact  :=  Some(scalaLibrary)
   )
 
-  private def replJar  = artifactPath in (Compile, packageBin) in 'repl mapValue Attributed.blank
-
   def root = List(
                                  name :=  PolicyName,
                   PolicyKeys.getScala <<= scalaInstanceTask,
@@ -122,6 +101,28 @@ private object projectSettings {
   private def testJavaOptions                = partestProperties map ("-Xmx1g" +: _.commandLineArgs)
   private def compilePath: TaskOf[Seq[File]] = dependencyClasspath in Compile map (_.files filter isJar)
   private def explode(f: File, d: File)      = IO.unzip(f, d, isSourceName _).toSeq
+
+  def scalaInstanceFromModuleIDTask: TaskOf[ScalaInstance] = Def task {
+    def isLib(f: File)  = f.getName contains "-library"
+    def isComp(f: File) = f.getName contains "-compiler"
+    def sorter(f: File) = if (isLib(f)) 1 else if (isComp(f)) 2 else 3
+
+    val report     = update.value configuration ScalaTool.name getOrElse sys.error("No update report")
+    val modReports = report.modules.toList
+    val pairs      = modReports flatMap (_.artifacts)
+    val files      = (pairs map (_._2) sortBy sorter).toList ::: buildJars.value.toList
+    def firstRevision = modReports.head.module.revision
+
+    files match {
+      case lib :: comp :: extras if isLib(lib) && isComp(comp) =>
+        state.value.log.debug(s"scalaInstanceFromModuleIDTask:\n$report" + (lib :: comp :: extras).mkString("\n  ", "\n  ", "\n"))
+        ScalaInstance(firstRevision, lib, comp, extras: _*)(state.value.classLoaderCache.apply)
+      case _                                  =>
+        val v = scalaVersion.value
+        state.value.log.info(s"Couldn't find scala instance: $report\nWill try $v instead")
+        ScalaInstance(v, appConfiguration.value.provider.scalaProvider.launcher getScala v)
+    }
+  }
 
   def createUnzipTask: TaskOf[Seq[File]] = Def task (compilePath.value flatMap (f => explode(f, sourceManaged.value / "compat")))
 

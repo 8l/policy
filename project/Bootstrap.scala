@@ -2,11 +2,10 @@ package policy
 package building
 
 import sbt._, Keys._, psp.libsbt._
+import scala.sys.process.Process
 
 trait Bootstrap {
   self: PolicyPackage =>
-
-  private def runSlurp(cmd: String): String = scala.sys.process.Process(cmd).lines.mkString
 
   // Creates a fresh version number, publishes bootstrap jars with that number to the local repository.
   // Records the version in project/local.properties where it has precedence over build.properties.
@@ -44,7 +43,7 @@ trait Bootstrap {
 
   private def commonBootstrap(ws: State, isLocal: Boolean, commands: Seq[String]): State = {
     val newVersion = ws(version) match {
-      case v if isLocal => dash(v takeWhile (_ != '-'), runSlurp("bin/unique-version"))
+      case v if isLocal => dash(v takeWhile (_ != '-'), Process("bin/unique-version").!!)
       case v            => v
     }
     val saveCommand = "saveBootstrapVersion %s %s".format( if (isLocal) "local" else "remote" , newVersion )

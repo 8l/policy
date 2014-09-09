@@ -1,56 +1,44 @@
 package policy
 
-import sbt._, Keys._, building._
-import psp.libsbt._
+import sbt._, Keys._, psp.libsbt._
 
-sealed abstract class PolicyPackage extends Constants  with Runners with Bootstrap
+package object building extends policy.building.PolicyPackage
 
-package object building extends PolicyPackage {
-  def bintraySettings     = bintray.Plugin.bintraySettings
-  def mimaDefaultSettings = com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
-  def MimaKeys            = com.typesafe.tools.mima.plugin.MimaKeys
-  def previousArtifact    = MimaKeys.previousArtifact
-  def binaryIssueFilters  = MimaKeys.binaryIssueFilters
+package building {
+  sealed abstract class PolicyPackage extends Runners with Bootstrap {
+    lazy val buildProps = MutableProperties(file("project/build.properties"))
+    lazy val localProps = MutableProperties(file("project/local.properties"))
 
-  def chain[A](g: A => A)(f: A => A): A => A = f andThen g
-  def doto[A](x: A)(f: A => Unit): A = { f(x) ; x }
+    def sysOrBuild(name: String): Option[String] = (
+      (sys.props get name) orElse (localProps get name) orElse (buildProps get name)
+    )
 
-  // All interesting implicits should be in one place.
-  implicit def symToLocalProject(sym: scala.Symbol): LocalProject                 = LocalProject(sym.name)
-  implicit def projectToProjectOps(p: Project): PolicyProjectOps                  = new PolicyProjectOps(p)
-  implicit def inputTaskValueDiscarding[A](in: InputTaskOf[A]): InputTaskOf[Unit] = in map (_ => ())
+    def NoTraceSuppression      = scala.sys.SystemProperties.noTraceSupression.key
+    def pathSeparator           = java.io.File.pathSeparator
+    def separator               = java.io.File.separator
 
-  def chooseBootstrap = sysOrBuild(BootstrapModuleProperty).fold(scalaModuleId("compiler"))(moduleId)
+    def SbtKnownVersion         = sysOrBuild("sbt.version") | "0.13.5"
+    def ScalaKnownVersion       = sysOrBuild("scala.version") | "2.11.2"
+    def BootstrapModuleProperty = "bootstrap.module"
+    def PartestRunnerClass      = "scala.tools.partest.nest.ConsoleRunner"
+    def ReplRunnerClass         = "scala.tools.nsc.MainGenericRunner"
+    def CompilerRunnerClass     = "scala.tools.nsc.Main"
+    def PolicyOrg               = "org.improving"
+    def ScalaOrg                = "org.scala-lang"
+    def SbtOrg                  = "org.scala-sbt"
+    def PolicyName              = "policy"
+    def ScalaName               = "scala"
 
-  def scalaInstanceFromModuleIDTask: TaskOf[ScalaInstance] = Def task {
-    def isLib(f: File)  = f.getName contains "-library"
-    def isComp(f: File) = f.getName contains "-compiler"
-    def sorter(f: File) = if (isLib(f)) 1 else if (isComp(f)) 2 else 3
+    def stdScalacArgs  = Nil //wordSeq("-Ywarn-unused -Ywarn-unused-import -Xdev")
+    def stdPartestArgs = wordSeq("-deprecation -unchecked -Xlint")
+    def stdJavacArgs   = wordSeq("-nowarn -XDignore.symbol.file")
 
-    val report     = update.value configuration ScalaTool.name getOrElse sys.error("No update report")
-    val modReports = report.modules.toList
-    val pairs      = modReports flatMap (_.artifacts)
-    val files      = (pairs map (_._2) sortBy sorter).toList ::: buildJars.value.toList
-    def firstRevision = modReports.head.module.revision
+    implicit def symToLocalProject(sym: scala.Symbol): LocalProject                 = LocalProject(sym.name)
+    implicit def inputTaskValueDiscarding[A](in: InputTaskOf[A]): InputTaskOf[Unit] = in map (_ => ())
 
-    files match {
-      case lib :: comp :: extras if isLib(lib) && isComp(comp) =>
-        state.value.log.debug(s"scalaInstanceFromModuleIDTask:\n$report" + (lib :: comp :: extras).mkString("\n  ", "\n  ", "\n"))
-        ScalaInstance(firstRevision, lib, comp, extras: _*)(state.value.classLoaderCache.apply)
-      case _                                  =>
-        val v = scalaVersion.value
-        state.value.log.info(s"Couldn't find scala instance: $report\nWill try $v instead")
-        ScalaInstance(v, appConfiguration.value.provider.scalaProvider.launcher getScala v)
-    }
+    def chooseBootstrap                         = sysOrBuild(BootstrapModuleProperty).fold(scalaCompiler)(moduleId)
+    def scalaArtifactId(name: String): ModuleID = ScalaOrg % dash(ScalaName, name) % ScalaKnownVersion
+    def scalaLibrary                            = scalaArtifactId("library")
+    def scalaCompiler                           = scalaArtifactId("compiler")
   }
-
-  def sbtModuleId(name: String)   = SbtOrg    %          name          %  SbtKnownVersion
-  def scalaModuleId(name: String) = ScalaOrg  % dash(ScalaName, name)  % ScalaKnownVersion
-  def scalaLibrary  = scalaModuleId("library")
-  def scalaCompiler = scalaModuleId("compiler")
-
-  // The source dependency has a one-character change vs. asm-debug-all 5.0.3.
-  // Not using at present in favor of a binary blob in ~/lib.
-  // lazy val asm = RootProject(uri("git://github.com/paulp/asm.git#scala-fixes"))
-  // def asm = "org.ow2.asm" % "asm-debug-all" % "5.0.3"
 }
