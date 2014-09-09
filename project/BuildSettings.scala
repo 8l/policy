@@ -29,26 +29,25 @@ private object projectSettings {
 
   // Settings added to every project.
   def universal = bintraySettings ++ List(
-                        name ~=  (dash(PolicyName, _)),
-                organization :=  PolicyOrg,
-                     version :=  "1.0.0-M6",
-                scalaVersion :=  ScalaKnownVersion,
-          scalaBinaryVersion :=  "2.11",
-                    licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-            autoScalaLibrary :=  false,
-                  crossPaths :=  false,
-        managedScalaInstance :=  false,
-               sourcesInBase :=  false,
-                 logBuffered :=  false,
-                 showSuccess :=  false,
-                  showTiming :=  true,
-                  traceLevel :=  20,
-           ivyConfigurations +=  ScalaTool,
-                   resolvers +=  paulp.maven,
-                    key.jars ++= buildJars.value,
-               scalaInstance <<= scalaInstance in ThisBuild,
-       cancelable in compile :=  true,
-             fork in compile :=  true
+                     name ~=  (dash(PolicyName, _)),
+             organization :=  PolicyOrg,
+                  version :=  "1.0.0-M6",
+             scalaVersion :=  ScalaKnownVersion,
+       scalaBinaryVersion :=  "2.11",
+                 licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+         autoScalaLibrary :=  false,
+               crossPaths :=  false,
+     managedScalaInstance :=  false,
+            sourcesInBase :=  false,
+              logBuffered :=  false,
+              showSuccess :=  false,
+               showTiming :=  true,
+               traceLevel :=  20,
+        ivyConfigurations +=  ScalaTool,
+                 key.jars ++= buildJars.value,
+            scalaInstance <<= scalaInstance in ThisBuild,
+    cancelable in compile :=  true,
+          fork in compile :=  true
   )
 
   def compiler = codeProject(

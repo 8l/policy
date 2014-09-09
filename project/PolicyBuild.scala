@@ -49,7 +49,7 @@ object PolicyBuild extends sbt.Build {
   lazy val compat = (
     project.setup.noArtifacts
       dependsOn ( compilerProject )
-      sbtDeps ( "interface", "compiler-interface" )
+      also (libraryDependencies ++= Seq("org.scala-sbt" % "interface" % sbtVersion.value, "org.scala-sbt" % "compiler-interface" % sbtVersion.value))
   )
 
   def policyCommands = commands ++= Seq(
