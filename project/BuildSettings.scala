@@ -28,10 +28,10 @@ private object projectSettings {
   def codeProject(others: Setting[_]*) = compiling ++ publishing ++ others
 
   // Settings added to every project.
-  def universal = bintraySettings ++ List(
+  def universal = /*bintraySettings ++ */ normalProjectSettings ++ List(
                      name ~=  (dash(PolicyName, _)),
+                  version :=  publishVersion,
              organization :=  PolicyOrg,
-                  version :=  "1.0.0-M6",
              scalaVersion :=  ScalaKnownVersion,
        scalaBinaryVersion :=  "2.11",
                  licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
@@ -65,7 +65,7 @@ private object projectSettings {
             mainSource <<=  inSrc(Library),
         mainSourceDirs <++= allInSrc("forkjoin library"),
            mainOptions ++=  Seq("-sourcepath", mainSource.value.getPath),
-      previousArtifact  :=  Some(scalaLibrary)
+      com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact  :=  Some(scalaLibrary)
   )
 
   def root = List(

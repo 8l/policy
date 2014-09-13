@@ -1,6 +1,3 @@
-resolvers ++= Seq(
-  Resolver.url("paulp/sbt-plugins", url("https://dl.bintray.com/paulp/sbt-plugins"))(Resolver.ivyStylePatterns),
-  "paulp/maven" at "https://dl.bintray.com/paulp/maven"
-)
+addSbtPlugin("org.improving" % "psp-libsbt" % sys.props.getOrElse("libsbt.version", "0.4.1-M9"))
 
-addSbtPlugin("org.improving" % "psp-libsbt" % "0.3.1-M12")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.6")

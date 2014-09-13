@@ -61,7 +61,7 @@ Test Run PASSED
 [info]   .../bootstrap-compiler/1.0.0-M4/jars/bootstrap-compiler.jar
 [info]   ~/.ivy2/cache/jline/jline/jars/jline-2.12.jar
 [info]   /l/policy/lib/asm-5.0.4-SNAPSHOT.jar
-[info] This is sbt 0.13.5
+[info] This is sbt 0.13.6
 [info] The current project is {file:/l/policy/}root 1.0.0-M4
 [info] The current project is built against Scala 1.0.0-M4
 ```
@@ -76,7 +76,7 @@ You can update the bootstrap compiler in place:
 [info] ... 1.0.0-20140905-104026-3313c76c50-115620/jars/bootstrap-compiler.jar
 ...
 > about
-[info] This is sbt 0.13.5
+[info] This is sbt 0.13.6
 [info] The current project is {file:/l/policy/}root 1.0.0-M4
 [info] ... is built against 1.0.0-20140905-104026-3313c76c50-115620
 >
