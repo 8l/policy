@@ -2,6 +2,7 @@ package policy
 package building
 
 import sbt._, Keys._, psp.libsbt._
+import bintray.Plugin._
 
 private object projectSettings {
   final val Root     = "root"
@@ -28,7 +29,7 @@ private object projectSettings {
   def codeProject(others: Setting[_]*) = compiling ++ publishing ++ others
 
   // Settings added to every project.
-  def universal = /*bintraySettings ++ */ normalProjectSettings ++ List(
+  def universal = bintraySettings ++ standardSettings ++ List(
                      name ~=  (dash(PolicyName, _)),
                   version :=  publishVersion,
              organization :=  PolicyOrg,
@@ -51,21 +52,23 @@ private object projectSettings {
   )
 
   def compiler = codeProject(
-           mainSourceDirs <++= allInSrc("compiler reflect repl"),
-             mainTestDirs <+=  fromBase("partest/src"),
+           key.sourceDirs <++= allInSrc("compiler reflect repl"),
+       key.testSourceDirs <+=  fromBase("partest/src"),
     unmanagedBase in Test <<=  fromBase("partest/testlib"),
              fork in Test  :=  true,
                      test <<=  runAllTests,
                  testOnly <<=  runTests
   )
 
-  def compat   = List(sourceGenerators in Compile <+= createUnzipTask)
+  import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
+
+  def compat = List(key.generators <+= createUnzipTask)
 
   def library = codeProject(
-            mainSource <<=  inSrc(Library),
-        mainSourceDirs <++= allInSrc("forkjoin library"),
-           mainOptions ++=  Seq("-sourcepath", mainSource.value.getPath),
-      com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact  :=  Some(scalaLibrary)
+        key.mainSource <<=  inSrc(Library),
+        key.sourceDirs <++= allInSrc("forkjoin library"),
+       key.mainOptions ++=  Seq("-sourcepath", key.mainSource.value.getPath),
+      previousArtifact  :=  Some(scalaLibrary)
   )
 
   def root = List(
@@ -89,7 +92,7 @@ private object projectSettings {
                            updateConfiguration ~= (uc => new UpdateConfiguration(uc.retrieve, uc.missingOk, logging = UpdateLogging.Quiet))
   )
   def compiling = List(
-           resourceGenerators in Compile <+= generateProperties(),
+           resourceGenerators in Compile <+= generateProperties,
       javacOptions in (Compile, compile) ++= stdJavacArgs,
      scalacOptions in (Compile, compile) ++= stdScalacArgs,
          javacOptions in (Test, compile) :=  Seq("-nowarn"),
@@ -125,14 +128,20 @@ private object projectSettings {
 
   def createUnzipTask: TaskOf[Seq[File]] = Def task (compilePath.value flatMap (f => explode(f, sourceManaged.value / "compat")))
 
-  def generateProperties(): TaskOf[Seq[File]] = Def task {
-    val id    = name.value split "[-]" last;
-    val file  = (resourceManaged in Compile).value / s"$id.properties"
+  def propertiesFile = Def setting (
+    (resourceManaged in Compile).value / "%s.properties".format(name.value split '-' last)
+  )
+
+  def generateProperties: TaskOf[Seq[File]] = Def task {
+    val file = propertiesFile.value
     val props = MutableProperties(file)
-    props("version.number")              = version.value
-    props("scala.version.number")        = scalaVersion.value
-    props("scala.binary.version.number") = scalaBinaryVersion.value
-    props("bootstrap.moduleid")          = PolicyKeys.bootstrapModuleId.value.toString
+    def contents = Seq(
+      "version.number"              -> version.value,
+      "scala.version.number"        -> scalaVersion.value,
+      "scala.binary.version.number" -> scalaBinaryVersion.value,
+      "bootstrap.moduleid"          -> PolicyKeys.bootstrapModuleId.value.toString
+    )
+    for ((k, v) <- contents) props(k) = v
     props.save()
     Seq(file)
   }
