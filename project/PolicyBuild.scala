@@ -18,7 +18,8 @@ object PolicyBuild extends sbt.Build with LibSbt {
   //   https://github.com/paulp/asm
   //   "org.ow2.asm" % "asm-debug-all" % "5.0.3"
   def compilerDeps = Seq(jline, testInterface, diffutils % "test" intransitive)
-  def compatDeps = Def setting Seq(
+  def libraryDeps  = Seq(pspOrg %% "psp-std" % "0.4.5")
+  def compatDeps   = Def setting Seq(
     "org.scala-sbt" % "interface"          % sbtVersion.value,
     "org.scala-sbt" % "compiler-interface" % sbtVersion.value
   )
@@ -28,7 +29,7 @@ object PolicyBuild extends sbt.Build with LibSbt {
     )
 
   lazy val root     = projectSetup(project).root.alsoToolsJar dependsOn (library, compiler) aggregate (library, compiler, compat) also (commands += bootstrapCommand)
-  lazy val library  = projectSetup(project)
+  lazy val library  = projectSetup(project) also (libraryDependencies ++= libraryDeps)
   lazy val compiler = projectSetup(project) dependsOn library also (libraryDependencies ++= compilerDeps)
   lazy val compat   = projectSetup(project).noArtifacts dependsOn compiler settings (libraryDependencies <++= compatDeps)
 }
