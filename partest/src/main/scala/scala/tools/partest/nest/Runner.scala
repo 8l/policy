@@ -246,7 +246,8 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
     // use lines in block so labeled? Default to sorry, Charlie.
     def retainOn(expr: String) = {
       val f = expr.trim
-      def flagWasSet(f: String) = suiteRunner.scalacExtraArgs contains f
+      val allArgs = suiteRunner.scalacExtraArgs ++ PartestDefaults.scalacOpts.split(' ')
+      def flagWasSet(f: String) = allArgs contains f
       val (invert, token) =
         if (f startsWith "!") (true, f drop 1) else (false, f)
       val cond = token.trim match {
@@ -624,7 +625,7 @@ class SuiteRunner(
         |Version in properties: $versionMsg
         |Repository root:       $baseDir
         |Test sources root:     ${PathSettings.srcDir}
-        |Scalac options:        ${join(scalacExtraArgs: _*)}
+        |Scalac options:        ${join(scalacExtraArgs :+ PartestDefaults.scalacOpts: _*)}
         |Java options:          ${PartestDefaults.javaOpts}
         |Java binaries/runtime: $vmBin  $vmName
         |Compilation Path {
@@ -635,32 +636,6 @@ class SuiteRunner(
         |}
       """.stripMargin
   }
-
-  // def banner = {
-  //   val baseDir       = sys.props("basedir")
-  //   val policyVersion = sys.props("policy.version")
-
-  //   def relativize(path: String) = path.replace(baseDir, "$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
-  //   val vmBin  = javaHome + fileSeparator + "bin"
-  //   val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
-
-  // s"""|Partest version:     ${Properties.versionNumberString}
-  //     |Compiler under test: $policyVersion
-  //     |Scala version is:    $versionMsg
-  //     |Scalac options are:  ${scalacExtraArgs.mkString(" ")}
-  //     |Compilation Path:    ${relativize(joinPaths(fileManager.testClassPath))}
-  //     |Java binaries in:    $vmBin
-  //     |Java runtime is:     $vmName
-  //     |Java options are:    ${PartestDefaults.javaOpts}
-  //     |baseDir:             $baseDir
-  //     |sourceDir:           ${PathSettings.srcDir}
-  //     |Partest system properties {
-  //     |$propStr
-  //     |}
-  //   """.stripMargin
-  //   // |Available processors:       ${Runtime.getRuntime().availableProcessors()}
-  //   // |Java Classpath:             ${sys.props("java.class.path")}
-  // }
 
   def onFinishTest(testFile: File, result: TestState): TestState = result
 
