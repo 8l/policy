@@ -22,13 +22,12 @@ object PolicyBuild extends sbt.Build with LibSbt {
     "org.scala-sbt" % "interface"          % sbtVersion.value,
     "org.scala-sbt" % "compiler-interface" % sbtVersion.value
   )
-  def bootstrapCommand = commands += (
+  def bootstrapCommand =
     Command.single("bootstrap", "bootstrap" -> "run command in bootstrap world", "<cmd>")(
       (s, cmd) => s set (name in library := "bootstrap-library", name in compiler := "bootstrap-compiler") run s"root/$cmd"
     )
-  )
 
-  lazy val root     = projectSetup(project).root.alsoToolsJar dependsOn (library, compiler) aggregate (library, compiler, compat) also bootstrapCommand
+  lazy val root     = projectSetup(project).root.alsoToolsJar dependsOn (library, compiler) aggregate (library, compiler, compat) also (commands += bootstrapCommand)
   lazy val library  = projectSetup(project)
   lazy val compiler = projectSetup(project) dependsOn library also (libraryDependencies ++= compilerDeps)
   lazy val compat   = projectSetup(project).noArtifacts dependsOn compiler settings (libraryDependencies <++= compatDeps)
