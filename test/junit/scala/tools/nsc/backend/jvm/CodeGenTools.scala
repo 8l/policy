@@ -8,12 +8,10 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.{AbstractInsnNode, LabelNode, ClassNode, MethodNode}
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.{Settings, Global}
-import scala.tools.partest.ASMConverters
+import scala.tools.partest._
 import scala.collection.JavaConverters._
 
 object CodeGenTools {
-  import ASMConverters._
-
   def genMethod( flags: Int = Opcodes.ACC_PUBLIC,
                  name: String = "m",
                  descriptor: String = "()V",

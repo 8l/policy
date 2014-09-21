@@ -9,10 +9,8 @@ import org.objectweb.asm.Opcodes._
 import org.junit.Assert._
 
 import scala.tools.testing.AssertUtil._
-
 import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
+import scala.tools.partest._
 
 @RunWith(classOf[JUnit4])
 class UnreachableCodeTest {

@@ -1,5 +1,4 @@
-import scala.tools.partest.{BytecodeTest, ASMConverters}
-s
+import scala.tools.partest._
 import scala.tools.nsc.util.JavaClassPath
 import java.io.InputStream
 import org.objectweb.asm
@@ -8,8 +7,6 @@ import asm.tree.{ClassNode, InsnList}
 import scala.collection.JavaConverters._
 
 object Test extends BytecodeTest {
-  import ASMConverters._
-
   def show: Unit = {
     val instrBaseSeqs = Seq("ScalaClient_1", "JavaClient_1") map (name => instructionsFromMethod(getMethod(loadClassNode(name), "foo")))
     val instrSeqs = instrBaseSeqs map (_ filter isInvoke)

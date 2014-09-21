@@ -6,7 +6,7 @@ import org.junit.runners.JUnit4
 import org.junit.Assert._
 import CodeGenTools._
 import org.objectweb.asm.Opcodes._
-import scala.tools.partest.ASMConverters._
+import scala.tools.partest._
 
 @RunWith(classOf[JUnit4])
 class DirectCompileTest {
