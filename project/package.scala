@@ -5,9 +5,15 @@ import sbt._, Keys._, psp.libsbt._
 package object building extends policy.building.PolicyPackage
 
 package building {
-  sealed abstract class PolicyPackage extends Runners with Bootstrap {
+  sealed abstract class PolicyPackage extends Runners {
     lazy val buildProps = MutableProperties(file("project/build.properties"))
     lazy val localProps = MutableProperties(file("project/local.properties"))
+
+    def mimaDefaultSettings = com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+    def binaryIssueFilters  = com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
+    def previousArtifact    = com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
+    def reportBinaryIssues  = com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
+
 
     def sysOrBuild(name: String): Option[String] = (
       (sys.props get name) orElse (localProps get name) orElse (buildProps get name)

@@ -59,9 +59,6 @@ private object projectSettings {
                      test <<=  runAllTests,
                  testOnly <<=  runTests
   )
-
-  import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
-
   def compat = List(key.generators <+= createUnzipTask)
 
   def library = codeProject(
@@ -81,8 +78,7 @@ private object projectSettings {
                          watchSources ++= sbtFilesInBuild.value ++ sourceFilesInProject.value,
          PolicyKeys.bootstrapModuleId :=  chooseBootstrap,
                   libraryDependencies <+= PolicyKeys.bootstrapModuleId mapValue (_ % ScalaTool.name),
-           scalaInstance in ThisBuild <<= scalaInstanceFromModuleIDTask,
-                             commands ++= bootstrapCommands
+           scalaInstance in ThisBuild <<= scalaInstanceFromModuleIDTask
   )
   def publishing = List(
                      checksums in publishLocal := Nil,
