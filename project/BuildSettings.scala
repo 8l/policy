@@ -4,18 +4,20 @@ package building
 import sbt._, Keys._, psp.libsbt._
 import bintray.Plugin._
 
-private object projectSettings {
+object projectSetup {
   final val Root     = "root"
   final val Compiler = "compiler"
   final val Library  = "library"
   final val Compat   = "compat"
 
-  def apply(id: String): SettingSeq = universal ++ (id match {
-    case Root     => root
-    case Compat   => compat
-    case Compiler => compiler
-    case Library  => library
-  })
+  def apply(p: Project): Project = p also universal also {
+    p.id match {
+      case Root     => rootSettings :+ policyCommands
+      case Compiler => compilerSettings
+      case Library  => librarySettings ++ fullMimaSettings(scalaLibrary)
+      case Compat   => Seq(key.generators <+= createUnzipTask)
+    }
+  }
 
   // Boilerplate to get the prebuilt asm jar attached to the compiler metadata.
   val asmJarKey     = taskKey[File]("asm jar")
@@ -27,6 +29,18 @@ private object projectSettings {
 
   // Assembled settings for projects which produce an artifact.
   def codeProject(others: Setting[_]*) = compiling ++ publishing ++ others
+
+  def fullMimaSettings(m: ModuleID) = mimaDefaultSettings ++ Seq(
+    binaryIssueFilters ++= MimaPolicy.filters,
+                  test <<= reportBinaryIssues,
+      previousArtifact :=  Some(m)
+  )
+
+  def policyCommands = commands ++= Seq(
+    cmd.effectful("dump")(_.dumpSettings mkString "\n"),
+    cmd.effectful("diff", "<cmd>")(ShowDiff.diffSettings),
+    cmd.effectful("jarsIn", "<config>")((s, c) => (s classpathIn c.toLowerCase).files map s.relativize mkString "\n")
+  )
 
   // Settings added to every project.
   def universal = bintraySettings ++ standardSettings ++ List(
@@ -51,7 +65,7 @@ private object projectSettings {
           fork in compile :=  true
   )
 
-  def compiler = codeProject(
+  def compilerSettings = codeProject(
            key.sourceDirs <++= allInSrc("compiler reflect repl"),
        key.testSourceDirs <+=  fromBase("partest/src"),
     unmanagedBase in Test <<=  fromBase("partest/testlib"),
@@ -59,16 +73,15 @@ private object projectSettings {
                      test <<=  runAllTests,
                  testOnly <<=  runTests
   )
-  def compat = List(key.generators <+= createUnzipTask)
 
-  def library = codeProject(
+  def librarySettings = codeProject(
         key.mainSource <<=  inSrc(Library),
         key.sourceDirs <++= allInSrc("forkjoin library"),
        key.mainOptions ++=  Seq("-sourcepath", key.mainSource.value.getPath),
       previousArtifact  :=  Some(scalaLibrary)
   )
 
-  def root = List(
+  def rootSettings = List(
                                  name :=  PolicyName,
                   PolicyKeys.getScala <<= scalaInstanceTask,
                       PolicyKeys.repl <<= asInputTask(forkRepl),
@@ -91,8 +104,6 @@ private object projectSettings {
            resourceGenerators in Compile <+= generateProperties,
       javacOptions in (Compile, compile) ++= stdJavacArgs,
      scalacOptions in (Compile, compile) ++= stdScalacArgs,
-         javacOptions in (Test, compile) :=  Seq("-nowarn"),
-        scalacOptions in (Test, compile) :=  Seq("-Xlint"),
                               incOptions :=  stdIncOptions
   )
 

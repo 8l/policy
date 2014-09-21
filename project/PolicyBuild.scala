@@ -17,36 +17,19 @@ object PolicyBuild extends sbt.Build with LibSbt {
   // At present we build against a binary blob in ~/lib.
   //   https://github.com/paulp/asm
   //   "org.ow2.asm" % "asm-debug-all" % "5.0.3"
-  def compilerDependencies = Seq(jline, testInterface, diffutils % "test" intransitive)
-  def compatibilityDependencies = Def setting Seq(
+  def compilerDeps = Seq(jline, testInterface, diffutils % "test" intransitive)
+  def compatDeps = Def setting Seq(
     "org.scala-sbt" % "interface"          % sbtVersion.value,
     "org.scala-sbt" % "compiler-interface" % sbtVersion.value
   )
-
-  def fullMimaSettings(m: ModuleID) = mimaDefaultSettings ++ Seq(
-    binaryIssueFilters ++= MimaPolicy.filters,
-                  test <<= reportBinaryIssues,
-      previousArtifact :=  Some(m)
+  def bootstrapCommand = commands += (
+    Command.single("bootstrap", "bootstrap" -> "run command in bootstrap world", "<cmd>")(
+      (s, cmd) => s set (name in library := "bootstrap-library", name in compiler := "bootstrap-compiler") run s"root/$cmd"
+    )
   )
 
-  private implicit class LocalProjectOps(val p: Project) {
-    def setup = p settings (projectSettings(p.id): _*) settings (version := publishVersion)
-  }
-
-  lazy val root = (
-    project.root.setup.alsoToolsJar
-      dependsOn ( library, compiler )
-      aggregate ( library, compiler, compat )
-      also policyCommands
-  )
-  lazy val library  = project.setup also fullMimaSettings(scalaLibrary)
-  lazy val compiler = project.setup dependsOn library also (libraryDependencies ++= compilerDependencies)
-  lazy val compat   = project.setup.noArtifacts dependsOn compiler settings  (libraryDependencies <++= compatibilityDependencies)
-
-  def policyCommands = commands ++= Seq(
-    Command.single("bootstrap", "bootstrap" -> "run command in bootstrap world", "<cmd>")((s, cmd) => s set (name in library := "bootstrap-library", name in compiler := "bootstrap-compiler") run s"root/$cmd"),
-    cmd.effectful("dump")(_.dumpSettings mkString "\n"),
-    cmd.effectful("diff", "<cmd>")(ShowDiff.diffSettings),
-    cmd.effectful("jarsIn", "<config>")((s, c) => (s classpathIn c.toLowerCase).files map s.relativize mkString "\n")
-  )
+  lazy val root     = projectSetup(project).root.alsoToolsJar dependsOn (library, compiler) aggregate (library, compiler, compat) also bootstrapCommand
+  lazy val library  = projectSetup(project)
+  lazy val compiler = projectSetup(project) dependsOn library also (libraryDependencies ++= compilerDeps)
+  lazy val compat   = projectSetup(project).noArtifacts dependsOn compiler settings (libraryDependencies <++= compatDeps)
 }

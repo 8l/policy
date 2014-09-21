@@ -3,12 +3,7 @@
 
 run () { echo "$@" && "$@"; }
 
-[[ $# -lt 2 ]] && echo "Usage: $0 <bootstrap version|scala> <build version> [args]" && exit 0
+[[ $# -lt 2 ]] && echo "Usage: $0 <version> <publish|publishLocal>" && exit 1
 
 bootstrap="$1" && shift
-build="$1" && shift
-
-run sbt \
-  -Dpolicy.bootstrap="$bootstrap" \
-  -Dpolicy.build="$build" \
-  "$@"
+run sbt -x -Dpublish.version="$bootstrap" "$*"
