@@ -40,11 +40,14 @@ object MimaPolicy {
     scala.collection.mutable.SynchronizedStack
   """)
 
-  // filterImpl, filteredTail exclusions are from the mainline.
+  // These exclusions are mostly from the mainline.
   private val removedMethods = wordSet("""
     <<
     filterImpl
     filteredTail
+    scala$collection$immutable$Stream$$loop$4
+    scala$collection$immutable$Stream$$loop$5
+    scala$collection$immutable$Stream$$loop$6
   """)
 
   def isRemoved(name: String): Boolean = {
