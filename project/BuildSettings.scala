@@ -77,6 +77,7 @@ object projectSetup {
   def librarySettings = codeProject(
         key.mainSource <<=  inSrc(Library),
         key.sourceDirs <++= allInSrc("forkjoin library"),
+        key.sourceDirs <+=  fromBase("policy/src/main/scala"),
        key.mainOptions ++=  Seq("-sourcepath", key.mainSource.value.getPath),
       previousArtifact  :=  Some(scalaLibrary)
   )

@@ -9,8 +9,8 @@
 package scala
 package collection
 
-import generic._
-import Seq.fill
+import scala.collection.generic._
+import scala.collection.Seq.fill
 
 /** A template trait for non-strict views of sequences.
  *  $seqViewInfo
@@ -165,8 +165,8 @@ trait SeqViewLike[+A,
     override def iterator: Iterator[B] = self.iterator patch (from, patch.iterator, replaced)
     def length: Int = {
       val len = self.length
-      val pre = math.min(from, len)
-      val post = math.max(0, len - pre - replaced)
+      val pre = scala.math.`package`.min(from, len)
+      val post = scala.math.`package`.max(0, len - pre - replaced)
       pre + plen + post
     }
     def apply(idx: Int): B = {

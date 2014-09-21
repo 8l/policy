@@ -1,12 +1,6 @@
-/* NSC -- new scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Paul Phillips
- */
+package policy
 
-package scala
-package reflect
-package internal.util
-
+import scala.sys._
 import scala.collection.{ mutable, immutable }
 
 /** A debugging class for logging from whence a method is being called.

@@ -9,9 +9,9 @@
 package scala
 
 import scala.collection.{ mutable, immutable, generic }
-import immutable.StringOps
-import mutable.ArrayOps
-import generic.CanBuildFrom
+import scala.collection.immutable.StringOps
+import scala.collection.mutable.ArrayOps
+import scala.collection.generic.CanBuildFrom
 import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
 import scala.language.{implicitConversions, existentials}
@@ -136,7 +136,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   // We are stuck with it a while longer because sbt's compiler interface
   // still calls it as of 0.12.2.
   @deprecated("Use `sys.error(message)` instead", "2.9.0")
-  def error(message: String): Nothing = sys.error(message)
+  def error(message: String): Nothing = scala.sys.`package`.error(message)
 
   /** Tests an expression, throwing an `AssertionError` if false.
    *  Calls to this method will not be generated if `-Xelide-below`
@@ -457,6 +457,9 @@ private[scala] abstract class LowPriorityImplicits {
   import mutable.WrappedArray
   import immutable.WrappedString
 
+  private lazy val fbscbf = policy.Origins("fallbackStringCanBuildFrom", 5)
+  private lazy val wrapstring = policy.Origins("wrapString", 5)
+
   /** We prefer the java.lang.* boxed types to these wrappers in
    *  any potential conflicts.  Conflicts do exist because the wrappers
    *  need to implement ScalaNumber in order to have a symmetric equals
@@ -499,12 +502,13 @@ private[scala] abstract class LowPriorityImplicits {
   implicit def wrapBooleanArray(xs: Array[Boolean]): WrappedArray[Boolean] = if (xs ne null) new WrappedArray.ofBoolean(xs) else null
   implicit def wrapUnitArray(xs: Array[Unit]): WrappedArray[Unit] = if (xs ne null) new WrappedArray.ofUnit(xs) else null
 
-  implicit def wrapString(s: String): WrappedString = if (s ne null) new WrappedString(s) else null
-  implicit def unwrapString(ws: WrappedString): String = if (ws ne null) ws.self else null
+  implicit def wrapString(s: String): WrappedString    = wrapstring( if (s ne null) new WrappedString(s) else null )
+  implicit def unwrapString(ws: WrappedString): String = wrapstring( if (ws ne null) ws.self else null )
 
-  implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, immutable.IndexedSeq[T]] =
-    new CanBuildFrom[String, T, immutable.IndexedSeq[T]] {
-      def apply(from: String) = immutable.IndexedSeq.newBuilder[T]
-      def apply() = immutable.IndexedSeq.newBuilder[T]
-    }
+  // implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, immutable.IndexedSeq[T]] = fbscbf(
+  //   new CanBuildFrom[String, T, immutable.IndexedSeq[T]] {
+  //     def apply(from: String) = immutable.IndexedSeq.newBuilder[T]
+  //     def apply() = immutable.IndexedSeq.newBuilder[T]
+  //   }
+  // )
 }
