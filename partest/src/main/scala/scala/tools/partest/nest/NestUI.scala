@@ -70,7 +70,7 @@ object NestUI {
       case _           => red
     }
     val word = bold(colorizer(state.shortStatus))
-    f"$word $testNumber - $testIdent%-40s$reasonString"
+    "%s %s - %-40s %s".format(word, testNumber, testIdent, reasonString)
   }
 
   def reportTest(state: TestState) = {

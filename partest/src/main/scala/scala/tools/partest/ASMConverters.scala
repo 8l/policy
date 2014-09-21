@@ -4,6 +4,9 @@ package partest
 
 import scala.collection.JavaConverters._
 import org.objectweb.asm
+import asm._
+import asm.tree._
+import scala.tools.partest.AsmNode._
 import asm.{tree => t}
 
 /** Makes using ASM from ByteCodeTests more convenient.
@@ -11,8 +14,9 @@ import asm.{tree => t}
  * Wraps ASM instructions in case classes so that equals and toString work
  * for the purpose of bytecode diffing and pretty printing.
  */
-object ASMConverters {
+object ASMConverters extends ASMConverters
 
+trait ASMConverters extends ASMConvertersPolicy {
   /**
    * Transform the instructions of an ASM Method into a list of [[Instruction]]s.
    */
@@ -20,7 +24,7 @@ object ASMConverters {
 
   def convertMethod(meth: t.MethodNode): Method = new AsmToScala(meth).method
 
-  implicit class RichInstructionLists(val self: List[Instruction]) extends AnyVal {
+  implicit class RichInstructionLists(val self: List[Instruction]) {
     def === (other: List[Instruction]) = equivalentBytecode(self, other)
 
     def dropLinesFrames = self.filterNot(i => i.isInstanceOf[LineNumber] || i.isInstanceOf[FrameEntry])
@@ -215,5 +219,35 @@ object ASMConverters {
     case l: Label                                => method.visitLabel(asmLabel(l))
     case FrameEntry(tp, local, stack)            => method.visitFrame(tp, local.length, frameTypesToAsm(local, asmLabel).toArray, stack.length, frameTypesToAsm(stack, asmLabel).toArray)
     case LineNumber(line, start)                 => method.visitLineNumber(line, asmLabel(start))
+  }
+}
+
+trait ASMConvertersPolicy {
+  self: ASMConverters =>
+
+  implicit class ListCastingOps(xs: List[_]) {
+    def typedOf[A] : List[A] = xs.asInstanceOf[List[A]]
+  }
+  implicit class InsnListOps(xs: InsnList) {
+    def typed: List[AbstractInsnNode] = xs.iterator.asScala.toList.typedOf[AbstractInsnNode]
+    def jopcodes: List[Int]           = typed map (_.getOpcode)
+  }
+  implicit class TypedConversionOps(xs: java.util.List[_]) {
+    def asScalaTyped[A]: List[A] = xs match {
+      case null               => Nil
+      case xs: List[_]        => xs.typedOf[A]
+      case xs: Traversable[_] => xs.toList.typedOf[A]
+      case _                  => xs.asScala.toList.typedOf[A]
+    }
+  }
+  implicit class MethodNodeOps(val node: MethodNode) {
+    def jinstructions: List[AbstractInsnNode] = node.instructions.typed
+    def jopcodes: List[Int]                   = node.instructions.jopcodes
+  }
+  implicit class ClassNodeOps(val node: ClassNode) {
+    def jfields: List[FieldNode]          = if (node eq null) Nil else node.fields.asScalaTyped[FieldNode]
+    def jmethods: List[MethodNode]        = if (node eq null) Nil else node.methods.asScalaTyped[MethodNode]
+    def jinners: List[InnerClassNode]     = if (node eq null) Nil else node.innerClasses.asScalaTyped[InnerClassNode]
+    def fieldsAndMethods: List[AsmMember] = (jmethods map AsmNode.apply) ++ (jfields map AsmNode.apply) sortBy (_.characteristics)
   }
 }

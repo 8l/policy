@@ -5,7 +5,6 @@ import scala.collection.JavaConverters._
 import org.objectweb.asm.{ClassWriter, ClassReader}
 import org.objectweb.asm.tree._
 import java.io.{FileOutputStream, FileInputStream, File => JFile, InputStream}
-// import AsmNode._
 
 /**
  * Provides utilities for inspecting bytecode using ASM library.
@@ -29,8 +28,6 @@ import java.io.{FileOutputStream, FileInputStream, File => JFile, InputStream}
  *
  */
 abstract class BytecodeTest {
-  import ASMConverters._
-
   /** produce the output to be compared against a checkfile */
   protected def show(): Unit
 
