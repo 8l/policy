@@ -18,7 +18,7 @@ private[util] trait StackTracing extends Any {
    */
   def stackTracePrefixString(e: Throwable)(p: StackTraceElement => Boolean): String = {
     import collection.mutable.{ ArrayBuffer, ListBuffer }
-    import compat.Platform.EOL
+    import scala.compat.Platform.EOL
     import util.Properties.isJavaAtLeast
 
     val sb = ListBuffer.empty[String]
