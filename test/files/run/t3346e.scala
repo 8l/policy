@@ -66,10 +66,10 @@ object Test extends App {
   //need to hint type inferencer,
   //probably will be able to overcome after https://issues.scala-lang.org/browse/SI-4699  and
   // related issues are  fixed (by moving ev0 parameter from filterMap to toFM), see toFM2
-  println("qwe".filterMap((c: Char) => Some(c.toInt)))
+  println("qwe".toSeq.filterMap((c: Char) => Some(c.toInt)))
   println("qwe".filterMap((c: Char) => Some(c)))
   println(Array(2, 0).filterMap((c: Int) => Some(c.toInt)).toList)
-  println(Seq(2, 0).filterMap((c: Int) => if (c < 2) Some(c + "!") else None))
+  println(Seq(2, 0).filterMap((c: Int) => if (c < 2) Some("" + c + "!") else None))
   def test(i:Int) = Option(i)
   println(BitSet(2,0).filterMap(test))
 
