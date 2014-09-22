@@ -874,7 +874,7 @@ trait Implicits {
         matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
       }
       if (eligible.nonEmpty)
-        printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
+        printTyping(tree, "" + eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
 
       /** Faster implicit search.  Overall idea:
        *   - prune aggressively
@@ -1086,7 +1086,7 @@ trait Implicits {
       val infoMap = new InfoMap
       getParts(tp)(infoMap, new mutable.HashSet(), Set())
       if (infoMap.nonEmpty)
-        printTyping(tree, infoMap.size + " implicits in companion scope")
+        printTyping(tree, "" + infoMap.size + " implicits in companion scope")
 
       infoMap
     }

@@ -245,9 +245,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         val (types, terms) = handler.importedSymbols partition (_.name.isTypeName)
         val imps           = handler.implicitSymbols
         val found          = tokens filter (handler importsSymbolNamed _)
-        val typeMsg        = if (types.isEmpty) "" else types.size + " types"
-        val termMsg        = if (terms.isEmpty) "" else terms.size + " terms"
-        val implicitMsg    = if (imps.isEmpty) "" else imps.size + " are implicit"
+        val typeMsg        = if (types.isEmpty) "" else "" + types.size + " types"
+        val termMsg        = if (terms.isEmpty) "" else "" + terms.size + " terms"
+        val implicitMsg    = if (imps.isEmpty) "" else "" + imps.size + " are implicit"
         val foundMsg       = if (found.isEmpty) "" else found.mkString(" // imports: ", ", ", "")
         val statsMsg       = List(typeMsg, termMsg, implicitMsg) filterNot (_ == "") mkString ("(", ", ", ")")
 

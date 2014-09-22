@@ -5,8 +5,7 @@ overload-msg.scala:3: error: overloaded method value + with alternatives:
   (x: scala.Int)scala.Int <and>
   (x: Char)scala.Int <and>
   (x: Short)scala.Int <and>
-  (x: Byte)scala.Int <and>
-  (x: String)String
+  (x: Byte)scala.Int
  cannot be applied to (Int(in method f))
   def f[Int](y: Int) = x + y
                          ^

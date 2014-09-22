@@ -914,6 +914,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       // first line evaluates object to make sure constructor is run
       // initial "" so later code can uniformly be: + etc
       val preamble = """
+      |import Predef.stringAddition
+      |
       |object %s {
       |  %s
       |  lazy val %s: String = %s {

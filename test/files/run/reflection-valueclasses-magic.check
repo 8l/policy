@@ -38,7 +38,6 @@ method +: (x: Float)Float
 method +: (x: Int)Int
 method +: (x: Long)Long
 method +: (x: Short)Int
-method +: (x: String)String
 method -: (x: Byte)Int
 method -: (x: Char)Int
 method -: (x: Double)Double
@@ -170,7 +169,6 @@ testing Byte.>=(Int) with receiver = 2 and args = List(2 class java.lang.Integer
 testing Byte.>=(Long) with receiver = 2 and args = List(2 class java.lang.Long): [class java.lang.Boolean] =======> true
 testing Byte.>=(Float) with receiver = 2 and args = List(2.0 class java.lang.Float): [class java.lang.Boolean] =======> true
 testing Byte.>=(Double) with receiver = 2 and args = List(2.0 class java.lang.Double): [class java.lang.Boolean] =======> true
-testing Byte.+(String) with receiver = 2 and args = List(2 class java.lang.String): [class java.lang.String] =======> 22
 testing Byte.+(Byte) with receiver = 2 and args = List(2 class java.lang.Byte): [class java.lang.Integer] =======> 4
 testing Byte.+(Short) with receiver = 2 and args = List(2 class java.lang.Short): [class java.lang.Integer] =======> 4
 testing Byte.+(Char) with receiver = 2 and args = List( class java.lang.Character): [class java.lang.Integer] =======> 4
@@ -246,7 +244,6 @@ method +: (x: Float)Float
 method +: (x: Int)Int
 method +: (x: Long)Long
 method +: (x: Short)Int
-method +: (x: String)String
 method -: (x: Byte)Int
 method -: (x: Char)Int
 method -: (x: Double)Double
@@ -378,7 +375,6 @@ testing Short.>=(Int) with receiver = 2 and args = List(2 class java.lang.Intege
 testing Short.>=(Long) with receiver = 2 and args = List(2 class java.lang.Long): [class java.lang.Boolean] =======> true
 testing Short.>=(Float) with receiver = 2 and args = List(2.0 class java.lang.Float): [class java.lang.Boolean] =======> true
 testing Short.>=(Double) with receiver = 2 and args = List(2.0 class java.lang.Double): [class java.lang.Boolean] =======> true
-testing Short.+(String) with receiver = 2 and args = List(2 class java.lang.String): [class java.lang.String] =======> 22
 testing Short.+(Byte) with receiver = 2 and args = List(2 class java.lang.Byte): [class java.lang.Integer] =======> 4
 testing Short.+(Short) with receiver = 2 and args = List(2 class java.lang.Short): [class java.lang.Integer] =======> 4
 testing Short.+(Char) with receiver = 2 and args = List( class java.lang.Character): [class java.lang.Integer] =======> 4
@@ -454,7 +450,6 @@ method +: (x: Float)Float
 method +: (x: Int)Int
 method +: (x: Long)Long
 method +: (x: Short)Int
-method +: (x: String)String
 method -: (x: Byte)Int
 method -: (x: Char)Int
 method -: (x: Double)Double
@@ -586,7 +581,6 @@ testing Char.>=(Int) with receiver =  and args = List(2 class java.lang.Integer
 testing Char.>=(Long) with receiver =  and args = List(2 class java.lang.Long): [class java.lang.Boolean] =======> true
 testing Char.>=(Float) with receiver =  and args = List(2.0 class java.lang.Float): [class java.lang.Boolean] =======> true
 testing Char.>=(Double) with receiver =  and args = List(2.0 class java.lang.Double): [class java.lang.Boolean] =======> true
-testing Char.+(String) with receiver =  and args = List(2 class java.lang.String): [class java.lang.String] =======> 2
 testing Char.+(Byte) with receiver =  and args = List(2 class java.lang.Byte): [class java.lang.Integer] =======> 4
 testing Char.+(Short) with receiver =  and args = List(2 class java.lang.Short): [class java.lang.Integer] =======> 4
 testing Char.+(Char) with receiver =  and args = List( class java.lang.Character): [class java.lang.Integer] =======> 4
@@ -662,7 +656,6 @@ method +: (x: Float)Float
 method +: (x: Int)Int
 method +: (x: Long)Long
 method +: (x: Short)Int
-method +: (x: String)String
 method -: (x: Byte)Int
 method -: (x: Char)Int
 method -: (x: Double)Double
@@ -794,7 +787,6 @@ testing Int.>=(Int) with receiver = 2 and args = List(2 class java.lang.Integer)
 testing Int.>=(Long) with receiver = 2 and args = List(2 class java.lang.Long): [class java.lang.Boolean] =======> true
 testing Int.>=(Float) with receiver = 2 and args = List(2.0 class java.lang.Float): [class java.lang.Boolean] =======> true
 testing Int.>=(Double) with receiver = 2 and args = List(2.0 class java.lang.Double): [class java.lang.Boolean] =======> true
-testing Int.+(String) with receiver = 2 and args = List(2 class java.lang.String): [class java.lang.String] =======> 22
 testing Int.+(Byte) with receiver = 2 and args = List(2 class java.lang.Byte): [class java.lang.Integer] =======> 4
 testing Int.+(Short) with receiver = 2 and args = List(2 class java.lang.Short): [class java.lang.Integer] =======> 4
 testing Int.+(Char) with receiver = 2 and args = List( class java.lang.Character): [class java.lang.Integer] =======> 4
@@ -870,7 +862,6 @@ method +: (x: Float)Float
 method +: (x: Int)Long
 method +: (x: Long)Long
 method +: (x: Short)Long
-method +: (x: String)String
 method -: (x: Byte)Long
 method -: (x: Char)Long
 method -: (x: Double)Double
@@ -1002,7 +993,6 @@ testing Long.>=(Int) with receiver = 2 and args = List(2 class java.lang.Integer
 testing Long.>=(Long) with receiver = 2 and args = List(2 class java.lang.Long): [class java.lang.Boolean] =======> true
 testing Long.>=(Float) with receiver = 2 and args = List(2.0 class java.lang.Float): [class java.lang.Boolean] =======> true
 testing Long.>=(Double) with receiver = 2 and args = List(2.0 class java.lang.Double): [class java.lang.Boolean] =======> true
-testing Long.+(String) with receiver = 2 and args = List(2 class java.lang.String): [class java.lang.String] =======> 22
 testing Long.+(Byte) with receiver = 2 and args = List(2 class java.lang.Byte): [class java.lang.Long] =======> 4
 testing Long.+(Short) with receiver = 2 and args = List(2 class java.lang.Short): [class java.lang.Long] =======> 4
 testing Long.+(Char) with receiver = 2 and args = List( class java.lang.Character): [class java.lang.Long] =======> 4
@@ -1073,7 +1063,6 @@ method +: (x: Float)Float
 method +: (x: Int)Float
 method +: (x: Long)Float
 method +: (x: Short)Float
-method +: (x: String)String
 method -: (x: Byte)Float
 method -: (x: Char)Float
 method -: (x: Double)Double
@@ -1188,7 +1177,6 @@ testing Float.>=(Int) with receiver = 2.0 and args = List(2 class java.lang.Inte
 testing Float.>=(Long) with receiver = 2.0 and args = List(2 class java.lang.Long): [class java.lang.Boolean] =======> true
 testing Float.>=(Float) with receiver = 2.0 and args = List(2.0 class java.lang.Float): [class java.lang.Boolean] =======> true
 testing Float.>=(Double) with receiver = 2.0 and args = List(2.0 class java.lang.Double): [class java.lang.Boolean] =======> true
-testing Float.+(String) with receiver = 2.0 and args = List(2 class java.lang.String): [class java.lang.String] =======> 2.02
 testing Float.+(Byte) with receiver = 2.0 and args = List(2 class java.lang.Byte): [class java.lang.Float] =======> 4.0
 testing Float.+(Short) with receiver = 2.0 and args = List(2 class java.lang.Short): [class java.lang.Float] =======> 4.0
 testing Float.+(Char) with receiver = 2.0 and args = List( class java.lang.Character): [class java.lang.Float] =======> 4.0
@@ -1259,7 +1247,6 @@ method +: (x: Float)Double
 method +: (x: Int)Double
 method +: (x: Long)Double
 method +: (x: Short)Double
-method +: (x: String)String
 method -: (x: Byte)Double
 method -: (x: Char)Double
 method -: (x: Double)Double
@@ -1374,7 +1361,6 @@ testing Double.>=(Int) with receiver = 2.0 and args = List(2 class java.lang.Int
 testing Double.>=(Long) with receiver = 2.0 and args = List(2 class java.lang.Long): [class java.lang.Boolean] =======> true
 testing Double.>=(Float) with receiver = 2.0 and args = List(2.0 class java.lang.Float): [class java.lang.Boolean] =======> true
 testing Double.>=(Double) with receiver = 2.0 and args = List(2.0 class java.lang.Double): [class java.lang.Boolean] =======> true
-testing Double.+(String) with receiver = 2.0 and args = List(2 class java.lang.String): [class java.lang.String] =======> 2.02
 testing Double.+(Byte) with receiver = 2.0 and args = List(2 class java.lang.Byte): [class java.lang.Double] =======> 4.0
 testing Double.+(Short) with receiver = 2.0 and args = List(2 class java.lang.Short): [class java.lang.Double] =======> 4.0
 testing Double.+(Char) with receiver = 2.0 and args = List( class java.lang.Character): [class java.lang.Double] =======> 4.0

@@ -38,21 +38,34 @@ object MimaPolicy {
     scala.collection.mutable.SynchronizedQueue
     scala.collection.mutable.SynchronizedSet
     scala.collection.mutable.SynchronizedStack
+    scala.runtime.StringAdd
+    scala.Predef$any2stringadd
+    scala.Predef$StringAdd
   """)
 
   // These exclusions are mostly from the mainline.
   private val removedMethods = wordSet("""
+    +
     <<
     filterImpl
     filteredTail
     scala$collection$immutable$Stream$$loop$4
     scala$collection$immutable$Stream$$loop$5
     scala$collection$immutable$Stream$$loop$6
+    fallbackStringCanBuildFrom
+    wrapString
+    unwrapString
+    StringAdd
   """)
 
-  def isRemoved(name: String): Boolean = {
-    def pkg = name take (name lastIndexOf '.')
-    removedClasses(name) || removedPackages(pkg)
+  def isRemovedClass(name0: String): Boolean = {
+    def name = name0.stripSuffix("$").replace('#', '.')
+    def pkgs = (name split "[.]").inits map (_ mkString ".")
+
+    removedClasses(name) || (pkgs exists removedPackages)
+  }
+  def isRemovedMethod(name0: String): Boolean = {
+    removedMethods(name0)
   }
 
   object HasName { def unapply(x: HasDeclarationName) = Some(x.decodedName) }
@@ -70,16 +83,15 @@ object MimaPolicy {
       ProblemFilters.exclude[MissingClassProblem](s"scala.$s$n$d")
   }
   private def deletedFilter: ProblemFilter = {
-    case MissingClassProblem(cl) if removedPackages exists (cl.fullName startsWith _ + ".") => false
-    case MissingClassProblem(cl) if removedClasses(cl.fullName split "[$#]" head)           => false
-    case p: MissingMethodProblem if p.affectedVersion == Problem.ClassVersion.Old           => false // adding methods okay with me
-    case MissingMethodProblem(HasName(name)) if removedMethods(name)                        => false
-    case MissingTypesProblem(_, HasFullNames(missing)) if missing forall isRemoved          => false
-    case IncompatibleMethTypeProblem(PackageOf("scala.sys.process"), _)                     => false // TODO - SyncVar
-    case IncompatibleMethTypeProblem(HasName(name), _) if removedMethods(name)              => false
-    case IncompatibleResultTypeProblem(HasName(name), _) if removedMethods(name)            => false
-    case UpdateForwarderBodyProblem(meth)                                                   => false
-    case _                                                                                  => true
+    case MissingClassProblem(cl) if isRemovedClass(cl.fullName)                         => false
+    case p: MissingMethodProblem if p.affectedVersion == Problem.ClassVersion.Old       => false // adding methods okay with me
+    case MissingMethodProblem(HasName(name)) if isRemovedMethod(name)                   => false
+    case MissingTypesProblem(_, HasFullNames(missing)) if missing forall isRemovedClass => false
+    case IncompatibleMethTypeProblem(PackageOf("scala.sys.process"), _)                 => false // TODO - SyncVar
+    case IncompatibleMethTypeProblem(HasName(name), _) if removedMethods(name)          => false
+    case IncompatibleResultTypeProblem(HasName(name), _) if removedMethods(name)        => false
+    case UpdateForwarderBodyProblem(meth)                                               => false
+    case _                                                                              => true
   }
   private def individualFilters = Vector(
     ProblemFilters.exclude[MissingMethodProblem]("scala.collection.Iterator.corresponds")

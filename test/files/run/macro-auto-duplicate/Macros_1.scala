@@ -10,7 +10,7 @@ object Macros {
     }
     val xi4 = defAndUseX(Literal(Constant(4)))
     val xs2 = defAndUseX(Literal(Constant("2")))
-    c.Expr[String](Apply(Select(xi4, newTermName("$plus")), List(xs2)))
+    c.Expr[String](q""" ${""} + $xi4 + $xs2 """)
   }
 
   def foo = macro impl

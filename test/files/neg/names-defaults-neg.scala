@@ -98,7 +98,7 @@ object Test extends App {
   f3818(y = 1, m = 1)
 
   // DEFINITIONS
-  def test1(a: Int, b: String) = a +": "+ b
+  def test1(a: Int, b: String) = "" + a +": "+ b
   def test2(x: Unit) = println("test2")
   def test3(a: Int, b: Int) = a + b
   def test7(m: Int) = m
@@ -130,7 +130,7 @@ object anfun {
   def delay(var2: => Unit) { var2 }
   delay(var2 = 40)
 
-  def testAnnFun(a: Int, b: String) = println(a +": "+ b)
+  def testAnnFun(a: Int, b: String) = println("" + a +": "+ b)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
   val taf3 = testAnnFun(b = _: String, a = get(8))
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)

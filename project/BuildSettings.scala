@@ -93,6 +93,7 @@ object projectSetup {
          PolicyKeys.bootstrapModuleId :=  chooseBootstrap,
                   libraryDependencies <+= PolicyKeys.bootstrapModuleId mapValue (m => m.exceptScala % ScalaTool.name),
            scalaInstance in ThisBuild <<= scalaInstanceFromModuleIDTask
+          // exportedProducts in Compile <<= exportedProducts in Compile dependsOn generateClasspath
   )
   def publishing = List(
       //                checksums in publishLocal := Nil,

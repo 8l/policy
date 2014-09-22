@@ -90,9 +90,6 @@ object Test extends App {
   test(ArrayClass.info, Array(1, 2), "update", 0, 0)
   test(ArrayClass.info, Array(1, 2), "clone")
 
-  println("============\nOther")
-  test(typeOf[String], "2", "+", 3)
-
   println("============\nCTM")
   test(PredefModule.moduleClass.info, Predef, "classOf")
   test(PredefModule.moduleClass.info, Predef, "classOf", typeOf[String])

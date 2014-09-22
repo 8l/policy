@@ -1,7 +1,7 @@
 Expr[Int(2)](2)
 Expr[java.lang.String]({
   def foo = "hello";
-  foo.$plus("world!")
+  Predef.stringAddition(foo).$plus("world!")
 })
 Expr[Boolean]({
   def foo(x: Int) = {

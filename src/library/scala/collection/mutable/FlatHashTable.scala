@@ -231,7 +231,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   private def checkConsistent() {
     for (i <- 0 until table.length)
       if (table(i) != null && !containsElem(entryToElem(table(i))))
-        assert(assertion = false, i+" "+table(i)+" "+table.mkString)
+        assert(assertion = false, ""+i+" "+table(i)+" "+table.mkString)
   }
 
 

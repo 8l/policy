@@ -65,16 +65,16 @@ private[scala] abstract class Position {
   final def column(pos: Int): Int = pos & COLUMN_MASK
 
   /** Returns a string representation of the encoded position. */
-  def toString(pos: Int): String = line(pos) + ":" + column(pos)
+  def toString(pos: Int): String = "" + line(pos) + ":" + column(pos)
 }
 
 private[scala] object Position extends Position {
   def checkInput(line: Int, column: Int) {
     if (line < 0)
-      throw new IllegalArgumentException(line + " < 0")
+      throw new IllegalArgumentException("" + line + " < 0")
     if ((line == 0) && (column != 0))
-      throw new IllegalArgumentException(line + "," + column + " not allowed")
+      throw new IllegalArgumentException("" + line + "," + column + " not allowed")
     if (column < 0)
-      throw new IllegalArgumentException(line + "," + column + " not allowed")
+      throw new IllegalArgumentException("" + line + "," + column + " not allowed")
   }
 }

@@ -110,9 +110,6 @@ testing Array.apply: 1
 testing Array.update: ()
 testing Array.clone: List(1, 2)
 ============
-Other
-testing String.+: 23
-============
 CTM
 testing Predef.classOf: class scala.ScalaReflectionException: Predef.classOf is a compile-time function, it cannot be invoked with mirrors
 testing Predef.classOf: class scala.ScalaReflectionException: def classOf[T]: Class[T] takes 0 arguments

@@ -16,7 +16,7 @@ trait MemberHandlers {
   import global._
   import naming._
 
-  private def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)
+  private def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, xs.toVector :+ "\n": _*)
   private def codegenln(xs: String*): String = codegenln(true, xs: _*)
   private def codegen(leadingPlus: Boolean, xs: String*): String = {
     val front = if (leadingPlus) "+ " else ""
@@ -116,10 +116,10 @@ trait MemberHandlers {
           else any2stringOf(path, maxStringElements)
 
         val vidString =
-          if (replProps.vids) s"""" + f"@$${System.identityHashCode($path)}%8x" + """"
+          if (replProps.vids) s""" " + f"@$${System.identityHashCode($path)}%8x" + " """
           else ""
 
-        """ + "%s%s: %s = " + %s""".format(string2code(prettyName), vidString, string2code(req typeOf name), resultString)
+        """ + "%s%s: %s = " + %s """.format(string2code(prettyName), vidString, string2code(req typeOf name), resultString)
       }
     }
   }

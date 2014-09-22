@@ -7,13 +7,13 @@ object Util {
     for (lock <- held) {
       sb.append(if (holdsLock(lock)) '.' else '!')
     }
-    print("%5s|" format sb)
+    print(java.lang.String.format("%5s|", sb.result))
 
     sb.clear()
     for (lock <- notHeld) {
       sb.append(if (holdsLock(lock)) '!' else '.')
     }
-    print("%-15s " format sb)
+    print(java.lang.String.format("%-15s ", sb.result))
 
     (held forall holdsLock) && !(notHeld exists holdsLock)
   }

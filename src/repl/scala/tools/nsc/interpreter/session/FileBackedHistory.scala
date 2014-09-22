@@ -29,7 +29,7 @@ trait FileBackedHistory extends JLineHistory with JPersistentHistory {
   }
   def addLineToFile(item: CharSequence): Unit = {
     if (isPersistent)
-      append(item + "\n")
+      append("" + item + "\n")
   }
 
   /** Overwrites the history file with the current memory. */

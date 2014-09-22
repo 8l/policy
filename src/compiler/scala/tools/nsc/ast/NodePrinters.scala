@@ -197,7 +197,7 @@ abstract class NodePrinters {
       else if (trees.tail.isEmpty)
         traverse(trees.head)
       else {
-        printLine("", trees.length + " " + what + "s")
+        printLine("", "" + trees.length + " " + what + "s")
         trees foreach traverse
       }
     }
@@ -287,7 +287,7 @@ abstract class NodePrinters {
                 printLine("", "1 parameter list")
                 ps foreach traverse
               case pss        =>
-                printLine("", pss.length + " parameter lists")
+                printLine("", "" + pss.length + " parameter lists")
                 pss foreach (ps => traverseList("()", "parameter")(ps))
             }
             traverse(tpt)

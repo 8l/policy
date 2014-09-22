@@ -37,7 +37,7 @@ object Test extends App {
     def println(ar: Array[Int]) {
       def print1 = {
         def iter(i: Int): String =
-          ar(i) + (if (i < ar.length-1) "," + iter(i+1) else "")
+          "" + ar(i) + (if (i < ar.length-1) "," + iter(i+1) else "")
         if (ar.length == 0) "" else iter(0)
       }
       Console.println("[" + print1 + "]")

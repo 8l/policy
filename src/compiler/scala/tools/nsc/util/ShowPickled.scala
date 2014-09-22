@@ -150,7 +150,7 @@ object ShowPickled extends Names {
         val accessBoundary = (
           for (idx <- privateWithin) yield {
             val s = entryList nameAt idx
-            idx + "(" + s + ")"
+            "" + idx + "(" + s + ")"
           }
         )
         val flagString = {
@@ -182,7 +182,7 @@ object ShowPickled extends Names {
      */
     def printEntry(i: Int) {
       buf.readIndex = index(i)
-      p(i + "," + buf.readIndex + ": ")
+      p("" + i + "," + buf.readIndex + ": ")
       val tag = buf.readByte()
       out.print(tag2string(tag))
       val len = buf.readNat()
