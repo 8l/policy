@@ -152,14 +152,13 @@ import scala.language.implicitConversions"""
 
     def mkCoercions = numeric map (x => "def to%s: %s".format(x, x))
     def mkUnaryOps  = unaryOps map (x => "%s\n  def unary_%s : %s".format(x.doc, x.op, this opType I))
-    def mkStringOps = List("def +(x: String): String")
     def mkShiftOps  = (
       for (op <- shiftOps ; arg <- List(I, L)) yield
         "%s\n  def %s(x: %s): %s".format(op.doc, op.op, arg, this opType I)
     )
 
     def clumps: List[List[String]] = {
-      val xs1 = List(mkCoercions, mkUnaryOps, mkStringOps, mkShiftOps) map (xs => if (xs.isEmpty) xs else xs :+ "")
+      val xs1 = List(mkCoercions, mkUnaryOps, mkShiftOps) map (xs => if (xs.isEmpty) xs else xs :+ "")
       val xs2 = List(
         mkBinOpsGroup(comparisonOps, numeric, _ => Z),
         mkBinOpsGroup(bitwiseOps, cardinal, this opType _),

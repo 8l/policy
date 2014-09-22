@@ -42,8 +42,6 @@ final abstract class Int private extends AnyVal {
   /** Returns the negation of this value. */
   def unary_- : Int
 
-  def +(x: String): String
-
   /**
   * Returns this value bit-shifted left by the specified number of bits,
   *         filling in the new right bits with zeroes.
@@ -79,8 +77,8 @@ final abstract class Int private extends AnyVal {
   */
   def >>>(x: Long): Int
   /**
-  * Returns this value bit-shifted left by the specified number of bits,
-  *         filling in the right bits with the same value as the left-most bit of this.
+  * Returns this value bit-shifted right by the specified number of bits,
+  *         filling in the left bits with the same value as the left-most bit of this.
   *         The effect of this is to retain the sign of the value.
   * @example {{{
   * -21 >> 3 == -3
@@ -90,8 +88,8 @@ final abstract class Int private extends AnyVal {
   */
   def >>(x: Int): Int
   /**
-  * Returns this value bit-shifted left by the specified number of bits,
-  *         filling in the right bits with the same value as the left-most bit of this.
+  * Returns this value bit-shifted right by the specified number of bits,
+  *         filling in the left bits with the same value as the left-most bit of this.
   *         The effect of this is to retain the sign of the value.
   * @example {{{
   * -21 >> 3 == -3
