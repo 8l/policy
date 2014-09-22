@@ -9,6 +9,7 @@
 package scala
 package runtime
 
+import scala.annotation.unchecked.uncheckedPure
 import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
@@ -16,7 +17,6 @@ import scala.collection.generic.{ Sorted, IsTraversableLike }
 import scala.reflect.{ ClassTag, classTag }
 import scala.util.control.ControlThrowable
 import java.lang.{ Class => jClass }
-
 import java.lang.Double.doubleToLongBits
 import java.lang.reflect.{ Modifier, Method => JMethod }
 
@@ -24,7 +24,7 @@ import java.lang.reflect.{ Modifier, Method => JMethod }
  *  the scala runtime.  All these methods should be considered
  *  outside the API and subject to change or removal without notice.
  */
-object ScalaRunTime {
+@uncheckedPure object ScalaRunTime {
   def isArray(x: Any, atLevel: Int = 1): Boolean =
     x != null && isArrayClass(x.getClass, atLevel)
 

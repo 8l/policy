@@ -1,8 +1,10 @@
 package scala
+package reflect
 
 import java.lang.reflect.{ AccessibleObject => jAccessibleObject }
+import scala.annotation.unchecked.uncheckedPure
 
-package object reflect {
+@uncheckedPure object `package` {
 
   // in the new scheme of things ClassManifests are aliased to ClassTags
   // this is done because we want `toArray` in collections work with ClassTags

@@ -8,6 +8,7 @@ package reflect
 package internal
 
 import Variance._
+import scala.annotation.unchecked.uncheckedPure
 
 /** Variances form a lattice:
  *
@@ -73,7 +74,7 @@ final class Variance private (val flags: Int) extends AnyVal {
   )
 }
 
-object Variance {
+@uncheckedPure object Variance {
   implicit class SbtCompat(val v: Variance) {
     def < (other: Int) = v.flags < other
     def > (other: Int) = v.flags > other

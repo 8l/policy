@@ -4,6 +4,7 @@ package reflect
 import java.lang.{ Class => jClass }
 import scala.language.{implicitConversions, existentials}
 import scala.runtime.ScalaRunTime.{ arrayClass, arrayElementClass }
+import scala.annotation.unchecked.uncheckedPure
 
 /**
  *
@@ -116,7 +117,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
 /**
  * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
  */
-object ClassTag {
+@uncheckedPure object ClassTag {
   private val ObjectTYPE = classOf[java.lang.Object]
   private val NothingTYPE = classOf[scala.runtime.Nothing$]
   private val NullTYPE = classOf[scala.runtime.Null$]
