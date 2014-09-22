@@ -90,6 +90,7 @@ import scala.io.StdIn
 
   // miscelleaneous -----------------------------------------------------
   scala.`package`                         // to force scala package object to be seen.
+  scala.reflect.`package`
   scala.collection.immutable.List         // to force Nil, :: to be seen.
 
   type Function[-A, +B] = Function1[A, B]

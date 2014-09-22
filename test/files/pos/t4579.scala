@@ -455,7 +455,7 @@ class LispUser(lisp: Lisp) {
 
   def run = {
 
-    Console.println(string2lisp("(lambda (x) (+ (* x x) 1))"));
+    Console.println(string2lisp("(lambda (x) (+ (* x x) 1))").asInstanceOf[AnyRef]);
     Console.println(lisp2string(string2lisp("(lambda (x) (+ (* x x) 1))")));
     Console.println;
 

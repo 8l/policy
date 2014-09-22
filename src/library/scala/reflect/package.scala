@@ -5,7 +5,6 @@ import java.lang.reflect.{ AccessibleObject => jAccessibleObject }
 import scala.annotation.unchecked.uncheckedPure
 
 @uncheckedPure object `package` {
-
   // in the new scheme of things ClassManifests are aliased to ClassTags
   // this is done because we want `toArray` in collections work with ClassTags
   // but changing it to use the ClassTag context bound without aliasing ClassManifest
@@ -64,6 +63,3 @@ import scala.annotation.unchecked.uncheckedPure
   // todo. once we have implicit macros for tag generation, we can remove this anchor
   private[scala] def materializeClassTag[T](): ClassTag[T] = macro ???
 }
-
-/** An exception that indicates an error during Scala reflection */
-case class ScalaReflectionException(msg: String) extends Exception(msg)
