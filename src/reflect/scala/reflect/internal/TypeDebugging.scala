@@ -14,6 +14,8 @@ trait TypeDebugging {
 
   import definitions._
 
+  trait noPrint
+
   /** There's a whole lot of implementation detail which is nothing but noise when
    *  you are trying to see what's going on. This is my attempt to filter it out.
    */
@@ -53,6 +55,8 @@ trait TypeDebugging {
     }
     def apply(t: Tree) = skip(t)
   }
+
+  trait typeDebug
 
   /** Light color wrappers.
    */
@@ -114,7 +118,7 @@ trait TypeDebugging {
     }
     def ptTypeParam(td: TypeDef): String = {
       val TypeDef(_, name, tparams, rhs) = td
-      name + ptTypeParams(tparams) + ptTree(rhs)
+      "" + name + ptTypeParams(tparams) + ptTree(rhs)
     }
     def ptTypeParams(tparams: List[TypeDef]): String = str brackets (tparams map ptTypeParam)
 

@@ -1,7 +1,7 @@
 package policy
 package building
 
-import sbt._, Keys._, psp.libsbt._
+import sbt._, Keys._, psp.libsbt._, psp.std.api._
 import bintray.Plugin._
 
 object projectSetup {
@@ -78,7 +78,7 @@ object projectSetup {
         key.mainSource <<=  inSrc(Library),
         key.sourceDirs <++= allInSrc("forkjoin library"),
         key.sourceDirs <+=  fromBase("policy/src/main/scala"),
-       key.mainOptions ++=  Seq("-sourcepath", key.mainSource.value.getPath),
+       // key.mainOptions ++=  Seq("-sourcepath", key.mainSource.value.getPath),
       previousArtifact  :=  Some(scalaLibrary)
   )
 
@@ -91,13 +91,13 @@ object projectSetup {
     initialCommands in consoleProject +=  "\nimport policy.building._",
                          watchSources ++= sbtFilesInBuild.value ++ sourceFilesInProject.value,
          PolicyKeys.bootstrapModuleId :=  chooseBootstrap,
-                  libraryDependencies <+= PolicyKeys.bootstrapModuleId mapValue (_ % ScalaTool.name),
+                  libraryDependencies <+= PolicyKeys.bootstrapModuleId mapValue (m => m.exceptScala % ScalaTool.name),
            scalaInstance in ThisBuild <<= scalaInstanceFromModuleIDTask
   )
   def publishing = List(
-                     checksums in publishLocal := Nil,
-      publishArtifact in (Compile, packageDoc) := false,
-      publishArtifact in (Compile, packageSrc) := false,
+      //                checksums in publishLocal := Nil,
+      // publishArtifact in (Compile, packageDoc) := false,
+      // publishArtifact in (Compile, packageSrc) := false,
                      publishLocalConfiguration ~= (p => Classpaths.publishConfig(p.artifacts, p.ivyFile, p.checksums, p.resolverName, logging = UpdateLogging.Quiet, overwrite = false)),
                            updateConfiguration ~= (uc => new UpdateConfiguration(uc.retrieve, uc.missingOk, logging = UpdateLogging.Quiet))
   )
@@ -113,11 +113,11 @@ object projectSetup {
   private def explode(f: File, d: File)      = IO.unzip(f, d, isSourceName _).toSeq
 
   def scalaInstanceFromModuleIDTask: TaskOf[ScalaInstance] = Def task {
-    def isLib(f: File)  = f.getName contains "-library"
-    def isComp(f: File) = f.getName contains "-compiler"
+    def isLib(f: File)  = f.getName contains "bootstrap-library"
+    def isComp(f: File) = f.getName contains "bootstrap-compiler"
     def sorter(f: File) = if (isLib(f)) 1 else if (isComp(f)) 2 else 3
 
-    val report     = update.value configuration ScalaTool.name getOrElse sys.error("No update report")
+    val report     = (update.value configuration ScalaTool.name) | sys.error("No update report")
     val modReports = report.modules.toList
     val pairs      = modReports flatMap (_.artifacts)
     val files      = (pairs map (_._2) sortBy sorter).toList ::: buildJars.value.toList

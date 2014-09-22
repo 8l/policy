@@ -383,7 +383,7 @@ abstract class ICodeCheckers {
         /* Checks that tpe is a subtype of one of the allowed types */
         def checkType(tpe: TypeKind, allowed: TypeKind*) = (
           if (allowed exists (k => isSubtype(tpe, k))) ()
-          else icodeError(tpe + " is not one of: " + allowed.mkString("{ ", ", ", " }"))
+          else icodeError(s"$tpe is not one of: " + allowed.mkString("{ ", ", ", " }"))
         )
         def checkNumeric(tpe: TypeKind) =
           checkType(tpe, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE)

@@ -84,10 +84,7 @@ abstract class SymbolLoaders {
       // This was motivated by the desire to use YourKit probes, which
       // require yjp.jar at runtime. See SI-2089.
       if (settings.termConflict.isDefault)
-        throw new TypeError(
-          root+" contains object and package with same name: "+
-          name+"\none of them needs to be removed from classpath"
-        )
+        throw new TypeError(s"$root contains object and package with same name: $name\none of them needs to be removed from classpath")
       else if (settings.termConflict.value == "package") {
         warning(
           "Resolving package/object name conflict in favor of package " +

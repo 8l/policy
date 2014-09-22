@@ -407,9 +407,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
               if (isNeitherInClass && !(other.owner isSubClass member.owner))
                 emitOverrideError(
-                  clazz + " inherits conflicting members:\n  "
+                  s"$clazz inherits conflicting members:\n  "
                     + infoStringWithLocation(other) + "  and\n  " + infoStringWithLocation(member)
-                    + "\n(Note: this can be resolved by declaring an override in " + clazz + ".)"
+                    + s"\n(Note: this can be resolved by declaring an override in $clazz.)"
                 )
               else
                 overrideError("needs `override' modifier")
@@ -552,8 +552,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def abstractClassError(mustBeMixin: Boolean, msg: String) {
           def prelude = (
             if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
-            else if (mustBeMixin) clazz + " needs to be a mixin"
-            else clazz + " needs to be abstract"
+            else if (mustBeMixin) s"$clazz needs to be a mixin"
+            else s"$clazz needs to be abstract"
           ) + ", since"
 
           if (abstractErrors.isEmpty) abstractErrors ++= List(prelude, msg)
@@ -963,7 +963,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       def onSyms[T](f: List[Symbol] => T) = f(List(receiver, actual))
 
       // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol`
-      def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(other.tpe.widen)
+      def typesString = "" + normalizeAll(qual.tpe.widen)+" and "+normalizeAll(other.tpe.widen)
 
       /* Symbols which limit the warnings we can issue since they may be value types */
       val isMaybeValue = Set[Symbol](AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)

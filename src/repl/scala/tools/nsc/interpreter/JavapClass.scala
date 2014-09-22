@@ -516,24 +516,26 @@ class JavapClass(
       }
       def candidates(s: String) = (helps map (h => maybe(h._1, s))).flatten
       // one candidate or one single-char candidate
-      def uniqueOf(maybes: Seq[String]) = {
+      def uniqueOf(maybes: Seq[String]): Seq[String] = {
         def single(s: String) = s.length == 2
         if (maybes.length == 1) maybes
         else if ((maybes count single) == 1) maybes filter single
         else Nil
       }
       // each optchar must decode to exactly one option
-      def unpacked(s: String): Try[Seq[String]] = {
-        val ones = (s drop 1) map { c =>
-          val maybes = uniqueOf(candidates(s"-$c"))
-          if (maybes.length == 1) Some(maybes.head) else None
+      def unpacked(s: String): Seq[String] = {
+        def fallback = Seq("-help")
+        (s stripPrefix "-").toSeq map { c =>
+          uniqueOf(candidates("-" + c)) match {
+            case Seq(h) => h
+            case _      => return Seq("-help")
+          }
         }
-        Try(ones) filter (_ forall (_.isDefined)) map (_.flatten)
       }
-      val res = uniqueOf(candidates(arg))
-      if (res.nonEmpty) res
-      else (unpacked(arg)
-        getOrElse (Seq("-help"))) // or else someone needs help
+      uniqueOf(candidates(arg)) match {
+        case Seq() => unpacked(arg)
+        case res   => res
+      }
     }
 
     def helper(pw: PrintWriter) = new Showable {

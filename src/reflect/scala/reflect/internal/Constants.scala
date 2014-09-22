@@ -216,7 +216,7 @@ trait Constants extends api.Constants {
     }
 
     def escapedStringValue: String = {
-      def escape(text: String): String = text flatMap escapedChar
+      def escape(text: String): String = new NewPredef.ProperStringOps(text) flatMap escapedChar
       tag match {
         case NullTag   => "null"
         case StringTag => "\"" + escape(stringValue) + "\""

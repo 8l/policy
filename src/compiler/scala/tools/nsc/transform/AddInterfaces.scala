@@ -76,7 +76,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
           // visible on the compilation classpath.  In general this is true under
           // -optimise and not otherwise, but the classpath can use arbitrary
           // logic so the classpath must be queried.
-          if (classPath.context.isValidName(implName + ".class")) {
+          if (classPath.context.isValidName(s"$implName.class")) {
             iface.owner.info.decls unlink implSym
             NoSymbol
           }

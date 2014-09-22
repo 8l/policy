@@ -177,7 +177,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      * Drop canBuildFrom part if class is final and canBuildFrom is synthesized
      */
     def equalsCore(eqmeth: Symbol, accessors: List[Symbol]) = {
-      val otherName = context.unit.freshTermName(clazz.name + "$")
+      val otherName = context.unit.freshTermName("" + clazz.name + "$")
       val otherSym  = eqmeth.newValue(otherName, eqmeth.pos, SYNTHETIC) setInfo clazz.tpe
       val pairwise  = accessors map (acc => fn(Select(mkThis, acc), acc.tpe member nme.EQ, Select(Ident(otherSym), acc)))
       val canEq     = gen.mkMethodCall(otherSym, nme.canEqual_, Nil, List(mkThis))
@@ -377,7 +377,7 @@ trait SyntheticMethods extends ast.TreeDSL {
 
       for (ddef @ DefDef(_, _, _, _, _, _) <- templ.body ; if isRewrite(ddef.symbol)) {
         val original = ddef.symbol
-        val newAcc = deriveMethod(ddef.symbol, name => context.unit.freshTermName(name + "$")) { newAcc =>
+        val newAcc = deriveMethod(ddef.symbol, name => context.unit.freshTermName("" + name + "$")) { newAcc =>
           newAcc.makePublic
           newAcc resetFlag (ACCESSOR | PARAMACCESSOR | OVERRIDE)
           ddef.rhs.duplicate

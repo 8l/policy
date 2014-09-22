@@ -409,6 +409,8 @@ trait Infer extends Checkable {
         tvars map (_ => WildcardType)
     }
 
+    trait AdjustedTypeArgs
+
     /** [Martin] Can someone comment this please? I have no idea what it's for
      *  and the code is not exactly readable.
      */
@@ -1360,7 +1362,7 @@ trait Infer extends Checkable {
           case tp               => tp
         }
 
-        private def followType(sym: Symbol) = followApply(pre memberType sym)
+        private def followType(sym: Symbol): Type = followApply(pre memberType sym)
         // separate method to help the inliner
         private def isAltApplicable(pt: Type)(alt: Symbol) = context inSilentMode { isApplicable(undetparams, followType(alt), argtpes, pt) && !context.reporter.hasErrors }
         private def rankAlternatives(sym1: Symbol, sym2: Symbol) = isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
@@ -1377,7 +1379,13 @@ trait Infer extends Checkable {
 
         private[this] val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
         def tryOnce(isLastTry: Boolean): Unit = {
-          debuglog(s"infer method alt ${tree.symbol} with alternatives ${alts map pre.memberType} argtpes=$argtpes pt=$pt")
+          if (!isPrimitiveValueClass(tree.symbol.enclClass)) {
+            log(tree.symbol.debugLocationString)
+            log(s"""  arguments: ${argtpes mkString ", "}""")
+            log(s"""   expected: $pt""")
+            if (isLastTry) log(s"""   last try!""")
+            (alts map followType).zipWithIndex foreach { case (tp, i) => log(f"${i + 1}%11d: " + tree.symbol.defStringSeenAs(tp)) }
+          }
           bestForExpectedType(pt, isLastTry)
         }
       }

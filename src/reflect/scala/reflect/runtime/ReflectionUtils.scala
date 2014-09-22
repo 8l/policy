@@ -85,7 +85,7 @@ object ReflectionUtils {
 
   def scalacShouldntLoadClassfile(fileName: String) = isTraitImplementation(fileName)
 
-  def scalacShouldntLoadClass(name: scala.reflect.internal.SymbolTable#Name) = scalacShouldntLoadClassfile(name + ".class")
+  def scalacShouldntLoadClass(name: scala.reflect.internal.SymbolTable#Name) = scalacShouldntLoadClassfile(s"$name.class")
 
   object PrimitiveOrArray {
     def unapply(jclazz: jClass[_]) = jclazz.isPrimitive || jclazz.isArray

@@ -28,7 +28,7 @@ trait GenJVMASM {
     val sym = icls.symbol
     def fail(msg: String, pos: Position = sym.pos) = {
       reporter.warning(sym.pos,
-        sym.name + " has a main method with parameter type Array[String], but " + sym.fullName('.') + " will not be a runnable program.\n" +
+        s"${sym.name} has a main method with parameter type Array[String], but " + sym.fullName('.') + " will not be a runnable program.\n" +
           "  Reason: " + msg
         // TODO: make this next claim true, if possible
         //   by generating valid main methods as static in module classes

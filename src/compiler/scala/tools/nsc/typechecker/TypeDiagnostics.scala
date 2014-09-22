@@ -298,7 +298,7 @@ trait TypeDiagnostics {
       else
         "`case _: " + (clazz.typeParams match {
           case Nil  => "" + clazz.name
-          case xs   => xs map (_ => "_") mkString (clazz.name + "[", ",", "]")
+          case xs   => xs map (_ => "_") mkString (s"${clazz.name}[", ",", "]")
         })+ "`"
 
     if (!clazz.exists) ""
@@ -438,6 +438,7 @@ trait TypeDiagnostics {
     def permanentlyHiddenWarning(pos: Position, hidden: Name, defn: Symbol) =
       context.warning(pos, "imported `%s' is permanently hidden by definition of %s".format(hidden, defn.fullLocationString))
 
+    trait checkUnused
     object checkUnused {
       val ignoreNames = Set[TermName]("readResolve", "readObject", "writeObject", "writeReplace")
 

@@ -46,9 +46,9 @@ abstract class TreeCheckers extends Analyzer {
     case _                            => diffTrees(t1, t2).toString // "<error: different tree classes>"
   }
 
-  private def clean_s(s: String) = s.replaceAllLiterally("scala.collection.", "s.c.")
-  private def typestr(x: Type)    = " (tpe = " + x + ")"
-  private def treestr(t: Tree)    = t + " [" + classString(t) + "]" + typestr(t.tpe)
+  private def clean_s(s: String)  = s.replaceAllLiterally("scala.collection.", "s.c.")
+  private def typestr(x: Type)    = s" (tpe = $x)"
+  private def treestr(t: Tree)    = s"$t [${classString(t)}]${typestr(t.tpe)}"
   private def ownerstr(s: Symbol) = "'" + s + "'" + s.locationString
   private def wholetreestr(t: Tree) = nodeToString(t) + "\n"
   private def truncate(str: String, len: Int): String = (
@@ -57,7 +57,7 @@ abstract class TreeCheckers extends Analyzer {
   )
   private def signature(sym: Symbol) = clean_s(sym match {
     case null           => "null"
-    case _: ClassSymbol => sym.name + ": " + sym.tpe_*
+    case _: ClassSymbol => s"${sym.name}: ${sym.tpe_*}"
     case _              => sym.defString
   })
   private def classString(x: Any) = x match {
@@ -126,7 +126,7 @@ abstract class TreeCheckers extends Analyzer {
     def reportChanges(): Unit = {
       // new symbols
       if (newSyms.nonEmpty) {
-        informFn(newSyms.size + " new symbols.")
+        informFn(s"${newSyms.size} new symbols.")
         val toPrint = if (settings.debug) sortedNewSyms mkString " " else ""
 
         newSyms.clear()
@@ -304,9 +304,7 @@ abstract class TreeCheckers extends Analyzer {
                     val agetter = accessed.getter(sym.owner)
                     val asetter = accessed.setter(sym.owner)
 
-                    assertFn(agetter == sym || asetter == sym,
-                      sym + " is getter or setter, but accessed sym " + accessed + " shows " + agetter + " and " + asetter
-                    )
+                    assertFn(agetter == sym || asetter == sym, s"$sym is getter or setter, but accessed sym $accessed shows $agetter and $asetter")
                   }
               }
             }
@@ -316,7 +314,7 @@ abstract class TreeCheckers extends Analyzer {
             }
           case Apply(fn, args) =>
             if (args exists (_ == EmptyTree))
-              errorFn(tree.pos, "Apply arguments to " + fn + " contains an empty tree: " + args)
+              errorFn(tree.pos, s"Apply arguments to $fn contains an empty tree: $args")
 
           case Select(qual, name) =>
             checkSym(tree)
@@ -341,7 +339,7 @@ abstract class TreeCheckers extends Analyzer {
           tree match {
             case x: PackageDef    =>
               if ((sym.ownerChain contains currentOwner) || currentOwner.isEmptyPackageClass) ()
-              else fail(sym + " owner chain does not contain currentOwner " + currentOwner + sym.ownerChain)
+              else fail(s"$sym owner chain does not contain currentOwner $currentOwner${sym.ownerChain}")
             case _ =>
               def cond(s: Symbol) = !s.isTerm || s.isMethod || s == sym.owner
 
@@ -394,7 +392,7 @@ abstract class TreeCheckers extends Analyzer {
             case NoType => Nil
             case _      => mk[Type]("and tpe", treeTpe) :: Nil
           }
-          def ref = mk[Symbol]("ref to", outOfScope, (s: Symbol) => s.nameString + " (" + s.debugFlagString + ")")
+          def ref = mk[Symbol]("ref to", outOfScope, (s: Symbol) => s"${s.nameString} (${s.debugFlagString})")
 
           val pairs = front ++ tpes ++ encls ++ (ref :: Nil)
           val width = pairs.map(_._2.length).max

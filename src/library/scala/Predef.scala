@@ -10,7 +10,9 @@ package scala
 
 import scala.collection.{ mutable, immutable, generic }
 import scala.collection.immutable.StringOps
+import scala.collection.immutable.WrappedString
 import scala.collection.mutable.ArrayOps
+import scala.collection.mutable.WrappedArray
 import scala.collection.generic.CanBuildFrom
 import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
@@ -126,9 +128,9 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   def optManifest[T](implicit m: OptManifest[T])     = m
 
   // Minor variations on identity functions
-  @inline def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
-  @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
-  @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
+  @inline def identity[A](x: A): A            = x // @see `conforms` for the implicit version
+  @inline def implicitly[A](implicit e: A): A = e // for summoning implicit values from the nether world
+  @inline def locally[T](x: T): T             = x // to communicate intent and avoid unmoored statements
 
   // errors and asserts -------------------------------------------------
 
@@ -264,17 +266,8 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     @inline def formatted(fmtstr: String): String = fmtstr format self
   }
 
-  // TODO: remove, only needed for binary compatibility of 2.11.0-RC1 with 2.11.0-M8
-  // note that `private[scala]` becomes `public` in bytecode
-  private[scala] final class StringAdd[A](private val self: A) extends AnyVal {
-    def +(other: String): String = String.valueOf(self) + other
-  }
-  private[scala] def StringAdd(x: Any): Any = new StringAdd(x)
-
-  // SI-8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
-  implicit final class any2stringadd[A](private val self: A) extends AnyVal {
-    def +(other: String): String = String.valueOf(self) + other
-  }
+  // Binary compatibility.
+  final def any2stringadd[A](self: A): BadPredef.any2stringadd[A] = new BadPredef.any2stringadd[A](self)
 
   implicit final class RichException(private val self: Throwable) extends AnyVal {
     import scala.compat.Platform.EOL
@@ -300,7 +293,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     def apply()             = mutable.StringBuilder.newBuilder
   }
 
-  @inline implicit def augmentString(x: String): StringOps = new StringOps(x)
+  @inline implicit def augmentString(x: String): StringOps   = new StringOps(x)
   @inline implicit def unaugmentString(x: StringOps): String = x.repr
 
   // printing -----------------------------------------------------------
@@ -454,12 +447,6 @@ private[scala] trait DeprecatedPredef {
 // cyclic reference errors compiling the standard library *without* a previously
 // compiled copy on the classpath.
 private[scala] abstract class LowPriorityImplicits {
-  import mutable.WrappedArray
-  import immutable.WrappedString
-
-  private lazy val fbscbf = policy.Origins("fallbackStringCanBuildFrom", 5)
-  private lazy val wrapstring = policy.Origins("wrapString", 5)
-
   /** We prefer the java.lang.* boxed types to these wrappers in
    *  any potential conflicts.  Conflicts do exist because the wrappers
    *  need to implement ScalaNumber in order to have a symmetric equals
@@ -492,23 +479,49 @@ private[scala] abstract class LowPriorityImplicits {
     else new WrappedArray.ofRef[T](xs)
   }
 
-  implicit def wrapIntArray(xs: Array[Int]): WrappedArray[Int] = if (xs ne null) new WrappedArray.ofInt(xs) else null
-  implicit def wrapDoubleArray(xs: Array[Double]): WrappedArray[Double] = if (xs ne null) new WrappedArray.ofDouble(xs) else null
-  implicit def wrapLongArray(xs: Array[Long]): WrappedArray[Long] = if (xs ne null) new WrappedArray.ofLong(xs) else null
-  implicit def wrapFloatArray(xs: Array[Float]): WrappedArray[Float] = if (xs ne null) new WrappedArray.ofFloat(xs) else null
-  implicit def wrapCharArray(xs: Array[Char]): WrappedArray[Char] = if (xs ne null) new WrappedArray.ofChar(xs) else null
-  implicit def wrapByteArray(xs: Array[Byte]): WrappedArray[Byte] = if (xs ne null) new WrappedArray.ofByte(xs) else null
-  implicit def wrapShortArray(xs: Array[Short]): WrappedArray[Short] = if (xs ne null) new WrappedArray.ofShort(xs) else null
+  implicit def wrapIntArray(xs: Array[Int]): WrappedArray[Int]             = if (xs ne null) new WrappedArray.ofInt(xs) else null
+  implicit def wrapDoubleArray(xs: Array[Double]): WrappedArray[Double]    = if (xs ne null) new WrappedArray.ofDouble(xs) else null
+  implicit def wrapLongArray(xs: Array[Long]): WrappedArray[Long]          = if (xs ne null) new WrappedArray.ofLong(xs) else null
+  implicit def wrapFloatArray(xs: Array[Float]): WrappedArray[Float]       = if (xs ne null) new WrappedArray.ofFloat(xs) else null
+  implicit def wrapCharArray(xs: Array[Char]): WrappedArray[Char]          = if (xs ne null) new WrappedArray.ofChar(xs) else null
+  implicit def wrapByteArray(xs: Array[Byte]): WrappedArray[Byte]          = if (xs ne null) new WrappedArray.ofByte(xs) else null
+  implicit def wrapShortArray(xs: Array[Short]): WrappedArray[Short]       = if (xs ne null) new WrappedArray.ofShort(xs) else null
   implicit def wrapBooleanArray(xs: Array[Boolean]): WrappedArray[Boolean] = if (xs ne null) new WrappedArray.ofBoolean(xs) else null
-  implicit def wrapUnitArray(xs: Array[Unit]): WrappedArray[Unit] = if (xs ne null) new WrappedArray.ofUnit(xs) else null
+  implicit def wrapUnitArray(xs: Array[Unit]): WrappedArray[Unit]          = if (xs ne null) new WrappedArray.ofUnit(xs) else null
+  implicit def wrapString(s: String): WrappedString                        = if (s ne null) new WrappedString(s) else null
+  implicit def unwrapString(ws: WrappedString): String                     = if (ws ne null) ws.self else null
+}
 
-  implicit def wrapString(s: String): WrappedString    = wrapstring( if (s ne null) new WrappedString(s) else null )
-  implicit def unwrapString(ws: WrappedString): String = wrapstring( if (ws ne null) ws.self else null )
+object NewPredef {
+  implicit final class ProperStringOps(private val self: String) extends AnyVal {
+    @inline def + (that: String): String = {
+      val sb = new StringBuilder
+      sb append self
+      sb append that
+      sb.toString
+    }
+    @inline def flatMap(f: Char => String): String = {
+      val sb = new StringBuilder
+      var i = 0
+      while (i < self.length) {
+        sb append f(self charAt i)
+        i += 1
+      }
+      sb.toString
+    }
+  }
+}
 
-  // implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, immutable.IndexedSeq[T]] = fbscbf(
-  //   new CanBuildFrom[String, T, immutable.IndexedSeq[T]] {
-  //     def apply(from: String) = immutable.IndexedSeq.newBuilder[T]
-  //     def apply() = immutable.IndexedSeq.newBuilder[T]
-  //   }
-  // )
+// Storage for the inanities of Predef which we've eliminated.
+object BadPredef {
+  // SI-8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
+  implicit final class any2stringadd[A](private val self: A) extends AnyVal {
+    def +(other: String): String = String.valueOf(self) + other
+  }
+
+  implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, immutable.IndexedSeq[T]] =
+    new CanBuildFrom[String, T, immutable.IndexedSeq[T]] {
+      def apply(from: String) = immutable.IndexedSeq.newBuilder[T]
+      def apply() = immutable.IndexedSeq.newBuilder[T]
+    }
 }

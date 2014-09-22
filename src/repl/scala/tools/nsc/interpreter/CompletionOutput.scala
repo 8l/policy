@@ -57,8 +57,8 @@ trait CompletionOutput {
 
     def tupleString(tp: Type) = parenList(tp.dealiasWiden.typeArgs map relativize)
     def functionString(tp: Type) = tp.dealiasWiden.typeArgs match {
-      case List(t, r) => t + " => " + r
-      case xs         => parenList(xs.init) + " => " + xs.last
+      case List(t, r) => s"$t => $r"
+      case xs         => s"${parenList(xs.init)} => ${xs.last}"
     }
 
     def tparamsString(tparams: List[Symbol])  = braceList(tparams map (_.defString))
@@ -68,7 +68,7 @@ trait CompletionOutput {
 
       val isImplicit = params.nonEmpty && params.head.isImplicit
       val strs = (params map paramString) match {
-        case x :: xs if isImplicit  => ("implicit " + x) :: xs
+        case x :: xs if isImplicit  => s"implicit $x" :: xs
         case xs                     => xs
       }
       parenList(strs)

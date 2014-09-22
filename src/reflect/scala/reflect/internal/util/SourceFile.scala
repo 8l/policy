@@ -23,7 +23,7 @@ abstract class SourceFile {
   def isSelfContained: Boolean
   def length : Int
   def position(offset: Int): Position = {
-    assert(offset < length, file + ": " + offset + " >= " + length)
+    assert(offset < length, s"$file: $offset >= $length")
     Position.offset(this, offset)
   }
 

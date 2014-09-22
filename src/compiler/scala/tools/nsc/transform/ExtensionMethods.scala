@@ -51,12 +51,12 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     declTypeNoBridge match {
       case OverloadedType(_, alts) =>
         val index = alts indexOf imeth
-        assert(index >= 0, alts+" does not contain "+imeth)
-        def altName(index: Int) = newTermName(imeth.name+"$extension"+index)
+        assert(index >= 0, s"$alts does not contain $imeth")
+        def altName(index: Int) = newTermName("" + imeth.name + "$extension" + index)
         altName(index) #:: ((0 until alts.length).toStream filter (index != _) map altName)
       case tpe =>
-        assert(tpe != NoType, imeth.name+" not found in "+imeth.owner+"'s decls: "+imeth.owner.info.decls)
-        Stream(newTermName(imeth.name+"$extension"))
+        assert(tpe != NoType, "" + imeth.name + " not found in " + imeth.owner + "'s decls: " + imeth.owner.info.decls)
+        Stream(imeth.name append "$extension")
     }
   }
 
@@ -77,11 +77,11 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
            |
            | Candidates:
            |
-           | ${candidates.map(c => c.name+":"+c.tpe).mkString("\n")}
+           | ${candidates.map(c => "" + c.name+":"+c.tpe).mkString("\n")}
            |
            | Candidates (signatures normalized):
            |
-           | ${candidates.map(c => c.name+":"+normalize(c.tpe, imeth.owner)).mkString("\n")}
+           | ${candidates.map(c => "" + c.name+":"+normalize(c.tpe, imeth.owner)).mkString("\n")}
            |
            | Eligible Names: ${extensionNames(imeth).mkString(",")}" """)
     matching.head

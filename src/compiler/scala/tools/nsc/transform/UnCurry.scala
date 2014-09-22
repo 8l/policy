@@ -603,7 +603,7 @@ abstract class UnCurry extends InfoTransform
      * {{{
      *   def foo(a: A)(b: a.B): a.type = {b; b}
      *   // after uncurry
-     *   def foo(a: A, b: a/* NOT IN SCOPE! */.B): a.B = {b; b}
+     *   def foo(a: A, b: a[not in scope].B): a.B = {b; b}
      * }}}
      *
      * This violates the principle that each compiler phase should produce trees that
@@ -624,6 +624,8 @@ abstract class UnCurry extends InfoTransform
      *   def foo(a: A, b: a.B forSome { val a: A }): a.B = { val b$1 = b.asInstanceOf[a.B]; b$1; b$1 }
      * }}}
      */
+
+    private trait dependentParamTypeErasure
     private object dependentParamTypeErasure {
       sealed abstract class ParamTransform {
         def param: ValDef
@@ -660,7 +662,7 @@ abstract class UnCurry extends InfoTransform
               // declared type and assign this to a synthetic val. Later, we'll patch
               // the method body to refer to this, rather than the parameter.
               val tempVal: ValDef = {
-                val tempValName = unit freshTermName (p.name + "$")
+                val tempValName = unit freshTermName ("" + p.name + "$")
                 val newSym = dd.symbol.newTermSymbol(tempValName, p.pos, SYNTHETIC).setInfo(p.symbol.info)
                 atPos(p.pos)(ValDef(newSym, gen.mkAttributedCast(Ident(p.symbol), p.symbol.info)))
               }

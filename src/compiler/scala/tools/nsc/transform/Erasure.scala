@@ -40,7 +40,7 @@ abstract class Erasure extends AddInterfaces
     val mname      = newTermName("to" + numericSym.name)
     val conversion = tree.tpe member mname
 
-    assert(conversion != NoSymbol, tree + " => " + numericSym)
+    assert(conversion != NoSymbol, s"$tree => $numericSym")
     atPos(tree.pos)(Apply(Select(tree, conversion), Nil))
   }
 
@@ -212,8 +212,8 @@ abstract class Erasure extends AddInterfaces
       }
       classPart :: (isTrait map boxedSig) mkString ":"
     }
-    def paramSig(tsym: Symbol) = tsym.name + boundsSig(hiBounds(tsym.info.bounds))
-    def polyParamSig(tparams: List[Symbol]) = (
+    def paramSig(tsym: Symbol): String = "" + tsym.name + boundsSig(hiBounds(tsym.info.bounds))
+    def polyParamSig(tparams: List[Symbol]): String = (
       if (tparams.isEmpty) ""
       else tparams map paramSig mkString ("<", "", ">")
     )

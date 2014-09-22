@@ -633,7 +633,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
           null
         else
-          innerSym.rawname + innerSym.moduleSuffix
+          "" + innerSym.rawname + innerSym.moduleSuffix
 
       // This collects all inner classes of csym, including local and anonymous: lambdalift makes
       // them members of their enclosing class.
@@ -1239,9 +1239,12 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           // add static forwarders if there are no name conflicts; see bugs #363 and #1735
           if (lmoc != NoSymbol) {
             // it must be a top level class (name contains no $s)
-            val isCandidateForForwarders = {
-              exitingPickler { !(lmoc.name.toString contains '$') && lmoc.hasModuleFlag && !lmoc.isImplClass && !lmoc.isNestedClass }
-            }
+            val isCandidateForForwarders = exitingPickler(
+                 (lmoc.name.toString indexOf '$') < 0
+              && lmoc.hasModuleFlag
+              && !lmoc.isImplClass
+              && !lmoc.isNestedClass
+            )
             if (isCandidateForForwarders)
               addForwarders(isRemote(clasz.symbol), jclass, thisName, lmoc.moduleClass)
           }
@@ -2021,7 +2024,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           var name = javaName(local.sym)
           if (name == null) {
             anonCounter += 1
-            name = "<anon" + anonCounter + ">"
+            name = s"<anon$anonCounter>"
           }
           for(intrvl <- ranges) {
             fltnd ::= (name, local, intrvl)

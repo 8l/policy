@@ -100,8 +100,7 @@ package collection {
 
     def buildString(closure: (Any => Unit) => Unit): String = {
       var output = ""
-      closure(output += _ + "\n")
-
+      closure(x => output = output + x + "\n")
       output
     }
 

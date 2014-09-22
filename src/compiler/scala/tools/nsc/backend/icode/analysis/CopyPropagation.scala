@@ -44,6 +44,8 @@ abstract class CopyPropagation {
   /** The bottom record. */
   object AllRecords extends Record(NoSymbol, mutable.HashMap[Symbol, Value]())
 
+  trait copyLattice
+
   /** The lattice for this analysis.   */
   object copyLattice extends SemiLattice {
     type Bindings = mutable.Map[Location, Value]

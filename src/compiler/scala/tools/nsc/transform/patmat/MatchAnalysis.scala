@@ -593,7 +593,7 @@ trait MatchAnalysis extends MatchApproximation {
         }
     }
     case class ConstructorExample(cls: Symbol, ctorArgs: List[CounterExample]) extends CounterExample {
-      override def toString = cls.decodedName + (if (cls.isModuleClass) "" else ctorArgs.mkString("(", ", ", ")"))
+      override def toString = "" + cls.decodedName + (if (cls.isModuleClass) "" else ctorArgs.mkString("(", ", ", ")"))
     }
 
     case object WildcardExample extends CounterExample { override def toString = "_" }
@@ -609,7 +609,7 @@ trait MatchAnalysis extends MatchApproximation {
     def varAssignmentString(varAssignment: Map[Var, (Seq[Const], Seq[Const])]) =
       varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>
          val assignment = "== "+ (trues mkString("(", ", ", ")")) +"  != ("+ (falses mkString(", ")) +")"
-         v +"(="+ v.path +": "+ v.staticTpCheckable +") "+ assignment
+         "" + v +"(="+ v.path +": "+ v.staticTpCheckable +") "+ assignment
        }.mkString("\n")
 
     // return constructor call when the model is a true counter example

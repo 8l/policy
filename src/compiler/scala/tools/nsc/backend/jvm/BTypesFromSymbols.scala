@@ -266,7 +266,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
       val innerName: Option[String] = {
         if (innerClassSym.isAnonymousClass || innerClassSym.isAnonymousFunction) None
-        else Some(innerClassSym.rawname + innerClassSym.moduleSuffix) // moduleSuffix for module classes
+        else Some("" + innerClassSym.rawname + innerClassSym.moduleSuffix) // moduleSuffix for module classes
       }
 
       Some(NestedInfo(enclosingClass, outerName, innerName, isStaticNestedClass))

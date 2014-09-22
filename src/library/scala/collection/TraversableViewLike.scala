@@ -81,7 +81,7 @@ trait TraversableViewLike[+A,
   override def stringPrefix = "TraversableView"
 
   override protected[this] def newBuilder: Builder[A, This] =
-    throw new UnsupportedOperationException(this+".newBuilder")
+    throw new UnsupportedOperationException("" + this + ".newBuilder")
 
   def force[B >: A, That](implicit bf: CanBuildFrom[Coll, B, That]) = {
     val b = bf(underlying)

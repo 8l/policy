@@ -355,7 +355,7 @@ abstract class DeadCodeElimination extends SubComponent {
       debuglog("Sweeping: " + m)
 
       m foreachBlock { bb =>
-        debuglog(bb + ":")
+        debuglog(s"$bb:")
         val oldInstr = bb.toList
         bb.open()
         bb.clear()

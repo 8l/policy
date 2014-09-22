@@ -92,7 +92,7 @@ abstract class ICodeReader extends ClassfileParser {
           val owner = if (static) ownerTpe.typeSymbol.linkedClassOfClass else ownerTpe.typeSymbol
           f = owner.info.findMember(origName, 0, 0, stableOnly = false).suchThat(_.tpe.widen =:= tpe)
           if (f == NoSymbol)
-            f = owner.info.findMember(newTermName(origName + nme.LOCAL_SUFFIX_STRING), 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
+            f = owner.info.findMember(newTermName("" + origName + nme.LOCAL_SUFFIX_STRING), 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
             if (ownerTpe.typeSymbol.isImplClass) {
@@ -184,7 +184,7 @@ abstract class ICodeReader extends ClassfileParser {
       else {
         var sym = owner.info.findMember(name, 0, 0, stableOnly = false).suchThat(old => sameType(old.tpe, tpe))
         if (sym == NoSymbol)
-          sym = owner.info.findMember(newTermName(name + nme.LOCAL_SUFFIX_STRING), 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
+          sym = owner.info.findMember(newTermName("" + name + nme.LOCAL_SUFFIX_STRING), 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
         if (sym == NoSymbol) {
           sym = if (field) owner.newValue(name.toTermName, owner.pos, jflags.toScalaFlags) else dummySym
           sym setInfoAndEnter tpe

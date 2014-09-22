@@ -243,7 +243,7 @@ abstract class LambdaLift extends InfoTransform {
           else unit.freshTermName(prefix)
 
         if (sym.isAnonymousFunction && sym.owner.isMethod) {
-          freshen(sym.name + nme.NAME_JOIN_STRING + sym.owner.name + nme.NAME_JOIN_STRING)
+          freshen("" + sym.name + nme.NAME_JOIN_STRING + sym.owner.name + nme.NAME_JOIN_STRING)
         } else {
           // SI-5652 If the lifted symbol is accessed from an inner class, it will be made public. (where?)
           //         Generating a unique name, mangled with the enclosing class name, avoids a VerifyError

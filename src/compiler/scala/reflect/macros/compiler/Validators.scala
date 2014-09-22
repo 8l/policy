@@ -2,6 +2,7 @@ package scala.reflect.macros
 package compiler
 
 import scala.reflect.internal.Flags._
+import scala.collection.mutable
 
 trait Validators {
   self: DefaultMacroCompiler =>
@@ -144,58 +145,57 @@ trait Validators {
      *  @param macroImpl The macro implementation symbol
      */
     private lazy val referenceMacroImplSig: MacroImplSig = {
-      // had to move method's body to an object because of the recursive dependencies between sigma and param
-      object SigGenerator {
-        val cache = scala.collection.mutable.Map[Symbol, Symbol]()
-        val ctxTpe = if (isBlackbox) BlackboxContextClass.tpe else WhiteboxContextClass.tpe
-        val ctxPrefix =
-          if (isImplMethod) singleType(NoPrefix, makeParam(nme.macroContext, macroDdef.pos, ctxTpe, SYNTHETIC))
-          else singleType(ThisType(macroImpl.owner), macroImpl.owner.tpe.member(nme.c))
-        val paramss =
-          if (isImplMethod) List(ctxPrefix.termSymbol) :: mmap(macroDdef.vparamss)(param)
-          else mmap(macroDdef.vparamss)(param)
-        val macroDefRet =
-          if (!macroDdef.tpt.isEmpty) typer.typedType(macroDdef.tpt).tpe
-          else computeMacroDefTypeFromMacroImplRef(macroDdef, macroImplRef) orElse AnyTpe
-        val implReturnType = sigma(increaseMetalevel(ctxPrefix, macroDefRet))
-
-        object SigmaTypeMap extends TypeMap {
-          def mapPrefix(pre: Type) = pre match {
-            case ThisType(sym) if sym == macroDef.owner =>
-              singleType(singleType(ctxPrefix, MacroContextPrefix), ExprValue)
-            case SingleType(NoPrefix, sym) =>
-              mfind(macroDdef.vparamss)(_.symbol == sym).fold(pre)(p => singleType(singleType(NoPrefix, param(p)), ExprValue))
-            case _ =>
-              mapOver(pre)
-          }
-          def apply(tp: Type): Type = tp match {
-            case TypeRef(pre, sym, args) =>
-              val pre1  = mapPrefix(pre)
-              val args1 = mapOverArgs(args, sym.typeParams)
-              if ((pre eq pre1) && (args eq args1)) tp
-              else typeRef(pre1, sym, args1)
-            case _ =>
-              mapOver(tp)
-          }
-        }
-        def sigma(tpe: Type): Type = SigmaTypeMap(tpe)
-
-        def makeParam(name: Name, pos: Position, tpe: Type, flags: Long) =
-          macroDef.newValueParameter(name.toTermName, pos, flags) setInfo tpe
-        def param(tree: Tree): Symbol = (
-          cache.getOrElseUpdate(tree.symbol, {
-            val sym = tree.symbol
-            assert(sym.isTerm, s"sym = $sym, tree = $tree")
-            makeParam(sym.name, sym.pos, sigma(increaseMetalevel(ctxPrefix, sym.tpe)), sym.flags)
-          })
-        )
-      }
-
       import SigGenerator._
       macroLogVerbose(s"generating macroImplSigs for: $macroDdef")
       val result = MacroImplSig(macroDdef.tparams map (_.symbol), paramss, implReturnType)
       macroLogVerbose(s"result is: $result")
       result
+    }
+
+    // had to move method's body to an object because of the recursive dependencies between sigma and param
+    private trait SigGenerator
+    private object SigGenerator {
+      val cache = mutable.Map[Symbol, Symbol]()
+      val ctxTpe = if (isBlackbox) BlackboxContextClass.tpe else WhiteboxContextClass.tpe
+      val ctxPrefix =
+        if (isImplMethod) singleType(NoPrefix, makeParam(nme.macroContext, macroDdef.pos, ctxTpe, SYNTHETIC))
+        else singleType(ThisType(macroImpl.owner), macroImpl.owner.tpe.member(nme.c))
+      val paramss =
+        if (isImplMethod) List(ctxPrefix.termSymbol) :: mmap(macroDdef.vparamss)(param)
+        else mmap(macroDdef.vparamss)(param)
+      val macroDefRet =
+        if (!macroDdef.tpt.isEmpty) typer.typedType(macroDdef.tpt).tpe
+        else computeMacroDefTypeFromMacroImplRef(macroDdef, macroImplRef) orElse AnyTpe
+      val implReturnType = sigma(increaseMetalevel(ctxPrefix, macroDefRet))
+
+      object SigmaTypeMap extends TypeMap {
+        def mapPrefix(pre: Type) = pre match {
+          case ThisType(sym) if sym == macroDef.owner => singleType(singleType(ctxPrefix, MacroContextPrefix), ExprValue)
+          case SingleType(NoPrefix, sym)              => mfind(macroDdef.vparamss)(_.symbol == sym).fold(pre)(p => singleType(singleType(NoPrefix, param(p)), ExprValue))
+          case _                                      => mapOver(pre)
+        }
+        def apply(tp: Type): Type = tp match {
+          case TypeRef(pre, sym, args) =>
+            val pre1  = mapPrefix(pre)
+            val args1 = mapOverArgs(args, sym.typeParams)
+            if ((pre eq pre1) && (args eq args1)) tp
+            else typeRef(pre1, sym, args1)
+          case _ =>
+            mapOver(tp)
+        }
+      }
+      def sigma(tpe: Type): Type = SigmaTypeMap(tpe)
+
+      def makeParam(name: Name, pos: Position, tpe: Type, flags: Long) =
+        macroDef.newValueParameter(name.toTermName, pos, flags) setInfo tpe
+
+      def param(tree: Tree): Symbol = (
+        cache.getOrElseUpdate(tree.symbol, {
+          val sym = tree.symbol
+          assert(sym.isTerm, s"sym = $sym, tree = $tree")
+          makeParam(sym.name, sym.pos, sigma(increaseMetalevel(ctxPrefix, sym.tpe)), sym.flags)
+        })
+      )
     }
   }
 }

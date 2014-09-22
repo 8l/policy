@@ -115,7 +115,7 @@ trait Logic extends Debugging  {
     abstract case class Sym(variable: Var, const: Const) extends Prop {
       private val id: Int = Sym.nextSymId
 
-      override def toString = variable +"="+ const +"#"+ id
+      override def toString = s"$variable=$const#$id"
     }
     class UniqueSym(variable: Var, const: Const) extends Sym(variable, const)
     object Sym {
@@ -161,6 +161,7 @@ trait Logic extends Debugging  {
     }
 
     // to govern how much time we spend analyzing matches for unreachability/exhaustivity
+    trait AnalysisBudget
     object AnalysisBudget {
       private val budgetProp = scala.sys.Prop[String]("scalac.patmat.analysisBudget")
       private val budgetOff = "off"

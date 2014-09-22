@@ -714,7 +714,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       else {
         val nestedOwners =
           featureTrait.owner.ownerChain.takeWhile(_ != languageFeatureModule.moduleClass).reverse
-        val featureName = (nestedOwners map (_.name + ".")).mkString + featureTrait.name
+        val featureName = (nestedOwners map (x => "" + x.name + ".")).mkString + featureTrait.name
         def action(): Boolean = {
           def hasImport = inferImplicit(EmptyTree: Tree, featureTrait.tpe, reportAmbiguous = true, isView = false, context).isSuccess
           def hasOption = settings.language contains featureName
@@ -2663,7 +2663,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // resPt is syntactically contained in samClassTp, so if the latter is fully defined, so is the former
       // ultimately, we want to fully define samClassTp as it is used as the superclass of our anonymous class
       val samDefTp = if (isFullyDefined(resPt)) resPt else NoType
-      val bodyName = newTermName(sam.name + "$body")
+      val bodyName = newTermName("" + sam.name + "$body")
 
       // `def '${sam.name}\$body'($p1: $T1, ..., $pN: $TN): $resPt = $body`
       val samBodyDef =
@@ -4000,7 +4000,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val name = tree.name
         val body = tree.body
         name match {
-          case name: TypeName  => assert(body == EmptyTree, context.unit + " typedBind: " + name.debugString + " " + body + " " + body.getClass)
+          case name: TypeName  => assert(body == EmptyTree, "" + context.unit + " typedBind: " + name.debugString + " " + body + " " + body.getClass)
             val sym =
               if (tree.symbol != NoSymbol) tree.symbol
               else {
@@ -4147,7 +4147,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val params = for (i <- List.range(0, arity)) yield
               atPos(tree.pos.focusStart) {
                 ValDef(Modifiers(PARAM | SYNTHETIC),
-                       unit.freshTermName("x" + i + "$"), TypeTree(), EmptyTree)
+                       unit.freshTermName(s"x$i$$"), TypeTree(), EmptyTree)
               }
             val ids = for (p <- params) yield Ident(p.name)
             val selector1 = atPos(tree.pos.focusStart) { if (arity == 1) ids.head else gen.mkTuple(ids) }
@@ -4321,7 +4321,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           val retry = (typeErrors.forall(_.errPos != null)) && (fun :: tree :: args exists errorInResult)
           typingStack.printTyping({
-            val funStr = ptTree(fun) + " and " + (args map ptTree mkString ", ")
+            val funStr = "" + ptTree(fun) + " and " + (args map ptTree mkString ", ")
             if (retry) "second try: " + funStr
             else "no second try: " + funStr + " because error not in result: " + typeErrors.head.errPos+"!="+tree.pos
           })
@@ -4831,8 +4831,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           } else if (tparams.isEmpty) {
             AppliedTypeNoParametersError(tree, tpt1.tpe)
           } else {
-            //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
-            if (settings.debug) Console.println(tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info)//debug
             AppliedTypeWrongNumberOfArgsError(tree, tpt1, tparams)
           }
         }

@@ -38,6 +38,7 @@ trait Warnings {
 
   // Lint warnings
 
+  trait LintWarnings
   object LintWarnings extends MultiChoiceEnumeration {
     class LintWarning(name: String, help: String, val yAliased: Boolean) extends Choice(name, help)
     def LintWarning(name: String, help: String, yAliased: Boolean = false) = new LintWarning(name, help, yAliased)

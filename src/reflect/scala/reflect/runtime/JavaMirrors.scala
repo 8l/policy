@@ -949,7 +949,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         info("made Scala "+pkg)
         pkg
       } else
-        throw new ReflectError(opkg+" is not a package")
+        throw new ReflectError(s"$opkg is not a package")
     }
 
     private def scalaSimpleName(jclazz: jClass[_]): TypeName = {

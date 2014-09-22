@@ -341,7 +341,7 @@ self =>
    *  @return      the string builder `b` to which elements were appended.
    */
   override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder =
-    this.iterator.map { case (k, v) => k+" -> "+v }.addString(b, start, sep, end)
+    this.iterator.map { case (k, v) => s"$k -> $v" }.addString(b, start, sep, end)
 
   /** Defines the prefix of this object's `toString` representation.
    *  @return  a string representation which starts the result of `toString` applied to this $coll.

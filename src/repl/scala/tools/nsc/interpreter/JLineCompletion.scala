@@ -117,19 +117,19 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     def filtered(xs: List[String]) = xs filterNot exclude distinct
 
     def completions(verbosity: Int) =
-      debugging(tp + " completions ==> ")(filtered(memberNames))
+      debugging(s"$tp completions ==> ")(filtered(memberNames))
 
     override def follow(s: String): Option[CompletionAware] =
-      debugging(tp + " -> '" + s + "' ==> ")(Some(TypeMemberCompletion(memberNamed(s).tpe)) filterNot (_ eq NoTypeCompletion))
+      debugging(s"$tp -> '$s' ==> ")(Some(TypeMemberCompletion(memberNamed(s).tpe)) filterNot (_ eq NoTypeCompletion))
 
     override def alternativesFor(id: String): List[String] =
-      debugging(id + " alternatives ==> ") {
+      debugging(s"$id alternatives ==> ") {
         val alts = members filter (x => x.isMethod && tos(x) == id) map methodSignatureString
 
         if (alts.nonEmpty) "" :: alts else Nil
       }
 
-    override def toString = "%s (%d members)".format(tp, members.size)
+    override def toString = s"$tp (${members.size} members)"
   }
 
   class PackageCompletion(tp: Type) extends TypeMemberCompletion(tp) {

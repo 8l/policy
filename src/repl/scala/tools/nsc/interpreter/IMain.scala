@@ -1177,8 +1177,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   def symbolDefString(sym: Symbol) = {
     TypeStrings.quieter(
       exitingTyper(sym.defString),
-      sym.owner.name + ".this.",
-      sym.owner.fullName + "."
+      s"${sym.owner.name}.this.",
+      s"${sym.owner.fullName}."
     )
   }
 

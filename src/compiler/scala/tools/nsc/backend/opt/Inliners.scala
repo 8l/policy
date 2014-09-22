@@ -940,7 +940,7 @@ abstract class Inliners extends SubComponent {
             tfa.knownNever += inc.sym
             inlineLog("never", inc.sym, reasonWhyNever)
             // next time around NeverSafeToInline is returned, thus skipping (duplicate) msg, this is intended.
-            return DontInlineHere(inc.m + " " + reasonWhyNever)
+            return DontInlineHere(s"${inc.m} $reasonWhyNever")
           }
 
           if(sameSymbols) { // TODO but this also amounts to recursive, ie should lead to adding to tfa.knownNever, right?

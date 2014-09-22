@@ -43,9 +43,7 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
     } else {
       if (member.sourceFile != null) {
         if (existing.sourceFile != member.sourceFile)
-          error(member+"is defined twice,"+
-                "\n in "+existing.sourceFile+
-                "\n and also in "+member.sourceFile)
+          error(s"$member is defined twice,\n in ${existing.sourceFile}\n and also in ${member.sourceFile}")
       }
       existing
     }

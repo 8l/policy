@@ -15,7 +15,7 @@ object Precedence extends (Int => Precedence) {
   private val ErrorName = "<error>"
   private def isAssignmentOp(name: String) = name match {
     case "!=" | "<=" | ">=" | "" => false
-    case _                       => name.last == '=' && name.head != '=' && isOperatorPart(name.head)
+    case _                       => (name charAt name.length - 1) == '=' && (name charAt 0) != '=' && isOperatorPart(name charAt 0)
   }
   private def firstChar(ch: Char): Precedence = apply((ch: @switch) match {
     case '|'             => 2

@@ -614,7 +614,7 @@ trait Contexts { self: Analyzer =>
       case x: Import => "" + x
       case Template(parents, `noSelfType`, body) =>
         val pstr = if ((parents eq null) || parents.isEmpty) "Nil" else parents mkString " "
-        val bstr = if (body eq null) "" else body.length + " stats"
+        val bstr = if (body eq null) "" else "" + body.length + " stats"
         s"""Template($pstr, _, $bstr)"""
       case x => s"${tree.shortClass}${treeIdString}:${treeTruncated}"
     }

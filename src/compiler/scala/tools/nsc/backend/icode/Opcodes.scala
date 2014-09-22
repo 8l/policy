@@ -124,6 +124,7 @@ trait Opcodes { self: ICodes =>
       super.clone.asInstanceOf[Instruction]
   }
 
+  trait opcodes
   object opcodes {
     /** Loads "this" on top of the stack.
      * Stack: ...

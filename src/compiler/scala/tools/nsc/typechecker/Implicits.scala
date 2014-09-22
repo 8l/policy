@@ -236,8 +236,8 @@ trait Implicits {
     }
     override def hashCode = name.## + pre.## + sym.##
     override def toString = (
-      if (tpeCache eq null) name + ": ?"
-      else name + ": " + tpe
+      if (tpeCache eq null) s"$name: ?"
+      else s"$name: $tpe"
     )
   }
 
@@ -345,7 +345,7 @@ trait Implicits {
 
     def failure(what: Any, reason: String, pos: Position = this.pos): SearchResult = {
       if (settings.XlogImplicits)
-        reporter.echo(pos, what+" is not a valid implicit value for "+pt+" because:\n"+reason)
+        reporter.echo(pos, s"$what is not a valid implicit value for $pt because:\n$reason")
       SearchFailure
     }
     /** Is implicit info `info1` better than implicit info `info2`?
@@ -1436,6 +1436,7 @@ trait Implicits {
     }
   }
 
+  trait ImplicitNotFoundMsg
   object ImplicitNotFoundMsg {
     def unapply(sym: Symbol): Option[(Message)] = sym.implicitNotFoundMsg match {
       case Some(m) => Some(new Message(sym, m))

@@ -909,10 +909,10 @@ trait Types
 
     protected def objectPrefix = "object "
     protected def packagePrefix = "package "
-    def trimPrefix(str: String) = str stripPrefix objectPrefix stripPrefix packagePrefix
+    def trimPrefix(str: String): String = str stripPrefix objectPrefix stripPrefix packagePrefix
 
     /** The string representation of this type used as a prefix */
-    def prefixString = trimPrefix(toString) + "#"
+    def prefixString = "" + trimPrefix(toString) + "#"
 
    /** Convert toString avoiding infinite recursions by cutting off
      *  after `maxTostringRecursions` recursion levels. Uses `safeToString`
@@ -1083,7 +1083,7 @@ trait Types
       // Avoiding printing Predef.type and scala.package.type as "type",
       // since in all other cases we omit those prefixes.
       val pre = underlying.typeSymbol.skipPackageObject
-      if (pre.isOmittablePrefix) pre.fullName + ".type"
+      if (pre.isOmittablePrefix) "" + pre.fullName + ".type"
       else prefixString + "type"
     }
 /*
@@ -1542,7 +1542,7 @@ trait Types
     val period = tpe.baseClassesPeriod
     if (period == currentPeriod) {
       if (force && breakCycles) {
-        def what = tpe.typeSymbol + " in " + tpe.typeSymbol.owner.fullNameString
+        def what = "" + tpe.typeSymbol + " in " + tpe.typeSymbol.owner.fullNameString
         val bcs  = computeBaseClasses(tpe)
         tpe.baseClassesCache = bcs
         warning(s"Breaking cycle in base class computation of $what ($bcs)")
@@ -1816,7 +1816,7 @@ trait Types
     override def isTrivial: Boolean = true
     override def deconst: Type = underlying.deconst
     override def safeToString: String =
-      underlying.toString + "(" + value.escapedStringValue + ")"
+      "" + underlying + "(" + value.escapedStringValue + ")"
     override def kind = "ConstantType"
   }
 
@@ -2261,7 +2261,7 @@ trait Types
       case _          => args.mkString("(", ", ", ")")
     }
     private def customToString = sym match {
-      case RepeatedParamClass | JavaRepeatedParamClass => args.head + "*"
+      case RepeatedParamClass | JavaRepeatedParamClass => "" + args.head + "*"
       case ByNameParamClass   => "=> " + args.head
       case _                  =>
         if (isFunctionTypeDirect(this)) {
@@ -2303,7 +2303,7 @@ trait Types
       else if (sym.isPackageClass || sym.isPackageObjectOrClass)
         sym.skipPackageObject.fullName + "."
       else if (isStable && nme.isSingletonName(sym.name))
-        tpnme.dropSingletonName(sym.name) + "."
+        "" + tpnme.dropSingletonName(sym.name) + "."
       else
         super.prefixString
     )
@@ -3231,7 +3231,7 @@ trait Types
 
     override def isTrivial: Boolean = underlying.isTrivial && annotations.forall(_.isTrivial)
 
-    override def safeToString = annotations.mkString(underlying + " @", " @", "")
+    override def safeToString = annotations.mkString("" + underlying + " @", " @", "")
 
     override def filterAnnotations(p: AnnotationInfo => Boolean): Type = {
       val (yes, no) = annotations partition p
@@ -3306,14 +3306,14 @@ trait Types
    *  are represented as NamedType.
    */
   case class NamedType(name: Name, tp: Type) extends Type {
-    override def safeToString: String = name.toString +": "+ tp
+    override def safeToString: String = "" + name +": "+ tp
   }
   /** As with NamedType, used only when calling isApplicable.
    *  Records that the application has a wildcard star (aka _*)
    *  at the end of it.
    */
   case class RepeatedType(tp: Type) extends Type {
-    override def safeToString: String = tp + ": _*"
+    override def safeToString: String = "" + tp + ": _*"
   }
 
   /** A temporary type representing the erasure of a user-defined value type.
@@ -3528,7 +3528,7 @@ trait Types
     if (false && isDefinitionsInitialized) {
       assert(isUseableAsTypeArgs(args), {
         val tapp_s = s"""$tycon[${args mkString ", "}]"""
-        val arg_s  = args filterNot isUseableAsTypeArg map (t => t + "/" + t.getClass) mkString ", "
+        val arg_s  = args filterNot isUseableAsTypeArg map (t => "" + t + "/" + t.getClass) mkString ", "
         s"$tapp_s includes illegal type argument $arg_s"
       })
     }

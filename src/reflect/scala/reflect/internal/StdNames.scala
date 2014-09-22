@@ -461,7 +461,7 @@ trait StdNames {
       if (isConstructorName(name))
         DEFAULT_GETTER_INIT_STRING + pos
       else
-        name + DEFAULT_GETTER_STRING + pos
+        "" + name + DEFAULT_GETTER_STRING + pos
     )
     // Nominally, name from name$default$N, CONSTRUCTOR for <init>
     def defaultGetterToMethod(name: Name): TermName = (

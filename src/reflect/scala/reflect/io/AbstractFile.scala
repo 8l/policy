@@ -213,10 +213,11 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
                      path0: String,
                      directory: Boolean): AbstractFile = {
     val separator = java.io.File.separatorChar
+    val last = path0 charAt path0.length - 1
     // trim trailing '/'s
-    val path: String = if (path0.last == separator) path0 dropRight 1 else path0
+    val path: String = if (last == separator) path0.substring(0, path0.length - 1) else path0
     val length = path.length()
-    assert(length > 0 && !(path.last == separator), path)
+    assert(length > 0 && last != separator, path)
     var file = this
     var start = 0
     while (true) {

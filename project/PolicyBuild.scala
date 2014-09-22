@@ -23,10 +23,13 @@ object PolicyBuild extends sbt.Build with LibSbt {
     "org.scala-sbt" % "interface"          % sbtVersion.value,
     "org.scala-sbt" % "compiler-interface" % sbtVersion.value
   )
-  def bootstrapCommand =
-    Command.single("bootstrap", "bootstrap" -> "run command in bootstrap world", "<cmd>")(
-      (s, cmd) => s set (name in library := "bootstrap-library", name in compiler := "bootstrap-compiler") run s"root/$cmd"
-    )
+  private def inProjects[A](f: String => Seq[A]): Seq[A] = List("library", "compiler") flatMap f
+
+  def bootstrapCommand = Command.args("bootstrap", "<cmds>") { (state, args) =>
+    val ss = inProjects(p => Seq(name in LocalProject(p) := s"bootstrap-$p", version in LocalProject(p) := publishVersion))
+    val cs = args flatMap (cmd => inProjects[String](p => Seq(s"$p/$cmd")))
+    state set (ss: _*) run (cs: _*)
+  }
 
   lazy val root     = projectSetup(project).root.alsoToolsJar dependsOn (library, compiler) aggregate (library, compiler, compat) also (commands += bootstrapCommand)
   lazy val library  = projectSetup(project) also (libraryDependencies ++= libraryDeps)

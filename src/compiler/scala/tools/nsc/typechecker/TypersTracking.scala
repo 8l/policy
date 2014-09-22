@@ -49,6 +49,7 @@ trait TypersTracking {
     s"($marker$undet_s: ${context.siteString}$owner_long_s) $implicits_s"
   }
 
+  trait typingStack
   object typingStack {
     val out = new java.io.PrintWriter(System.err, true)
 

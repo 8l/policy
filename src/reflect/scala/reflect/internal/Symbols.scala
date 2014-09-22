@@ -250,7 +250,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       "%s%25s | %-40s | %s".format(
         if (settings.uniqid) "%06d | ".format(id) else "",
         shortSymbolClass,
-        name.decode + " in " + owner,
+        "" + name.decode + " in " + owner,
         rawFlagString
       )
     )
@@ -2492,7 +2492,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  (the initial Name) before falling back on id, which varies depending
      *  on exactly when a symbol is loaded.
      */
-    final def sealedSortName: String = initName + "#" + id
+    final def sealedSortName: String = s"$initName#$id"
 
     /** String representation of symbol's definition key word */
     final def keyString: String =
@@ -2503,9 +2503,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isVariable) "var"
       else if (hasPackageFlag) "package"
       else if (isModule) "object"
-      else if (isSourceMethod) "def"
-      else if (isTerm && (!isParameter || isParamAccessor)) "val"
-      else ""
+      // This isn't right, but it was printing all these defs as vals
+      // and I got tired of it. Presumably that was because the symbol
+      // wasn't initialized.
+      else if (isTerm && isParamAccessor) "val"
+      else "def"
 
     private def symbolKind: SymbolKind = {
       var kind =
@@ -2530,10 +2532,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (isType) ("type", "type", "TPE")
         else if (isClassConstructor && (owner.hasCompleteInfo && isPrimaryConstructor)) ("primary constructor", "constructor", "PCTOR")
         else if (isClassConstructor) ("constructor", "constructor", "CTOR")
-        else if (isSourceMethod) ("method", "method", "METH")
-        else if (isTerm) ("value", "value", "VAL")
-        else ("", "", "???")
-      if (isSkolem) kind = (kind._1, kind._2, kind._3 + "#SKO")
+        // Same here as above, incorrect, but in scalac correctness is a comical notion anyway.
+        else if (isTerm && isParamAccessor) ("value", "value", "VAL")
+        else ("method", "method", "METH")
+
+      if (isSkolem) kind = (kind._1, kind._2, "" + kind._3 + "#SKO")
       SymbolKind(kind._1, kind._2, kind._3)
     }
 

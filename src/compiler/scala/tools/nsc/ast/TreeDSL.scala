@@ -21,6 +21,7 @@ trait TreeDSL {
   import global._
   import definitions._
 
+  trait CODE
   object CODE {
     // Add a null check to a Tree => Tree function
     def nullSafe[T](f: Tree => Tree, ifNull: Tree): Tree => Tree =

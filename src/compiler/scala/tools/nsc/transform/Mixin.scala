@@ -1152,7 +1152,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           def staticCall(target: Symbol) = {
             def implSym = implClass(sym.owner).info.member(sym.name)
             assert(target ne NoSymbol,
-              List(sym + ":", sym.tpe, sym.owner, implClass(sym.owner), implSym,
+              List(s"$sym:", sym.tpe, sym.owner, implClass(sym.owner), implSym,
                   enteringPrevPhase(implSym.tpe), phase) mkString " "
             )
             typedPos(tree.pos)(Apply(staticRef(target), transformSuper(qual) :: args))

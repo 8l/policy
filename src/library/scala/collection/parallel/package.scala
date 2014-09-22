@@ -98,7 +98,7 @@ package parallel {
       }
     }
   }
-  
+
   trait FactoryOps[From, Elem, To] {
     trait Otherwise[R] {
       def otherwise(notbody: => R): R
@@ -146,7 +146,7 @@ package parallel {
   @deprecated("This class will be removed.", "2.11.0")
   final case class CompositeThrowable(throwables: Set[Throwable]) extends Exception(
     "Multiple exceptions thrown during a parallel computation: " +
-      throwables.map(t => t + "\n" + t.getStackTrace.take(10).++("...").mkString("\n")).mkString("\n\n")
+      throwables.map(t => "" + t + "\n" + t.getStackTrace.take(10).++("...").mkString("\n")).mkString("\n\n")
   )
 
 

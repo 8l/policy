@@ -325,6 +325,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       val exporter: u.Importer { val from: compiler.type }
     }
 
+    trait withCompilerApi
     object withCompilerApi {
       private object api extends CompilerApi {
         lazy val compiler: ToolBoxGlobal = {

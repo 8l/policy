@@ -48,7 +48,7 @@ trait Kinds {
       }
     }
     private def kindMessage(a: Symbol, p: Symbol)(f: (String, String) => String): String =
-      f(a+qualify(a,p), p+qualify(p,a))
+      f("" + a + qualify(a,p), "" + p + qualify(p,a))
 
     // Normally it's nicer to print nothing rather than '>: Nothing <: Any' all over
     // the place, but here we need it for the message to make sense.
@@ -75,7 +75,7 @@ trait Kinds {
     )
 
     def errorMessage(targ: Type, tparam: Symbol): String = (
-        (targ+"'s type parameters do not match "+tparam+"'s expected parameters:")
+        s"$targ's type parameters do not match $tparam's expected parameters:"
       + buildMessage(arity, arityMessage)
       + buildMessage(variance, varianceMessage)
       + buildMessage(strictness, strictnessMessage)
@@ -316,7 +316,7 @@ trait Kinds {
     private[internal] def buildState(sym: Symbol, v: Variance)(s: StringState): StringState = {
       s.append(v.symbolicString).appendHead(order, sym).append(bounds.scalaNotation(_.toString))
     }
-    def scalaNotation: String = Kind.Head(order, None, None) + bounds.scalaNotation(_.toString)
+    def scalaNotation: String = "" + Kind.Head(order, None, None) + bounds.scalaNotation(_.toString)
     def starNotation: String = "*" + bounds.starNotation(_.toString)
   }
   object ProperTypeKind {
@@ -366,6 +366,8 @@ trait Kinds {
     def unapply(tck: TypeConKind): Some[(TypeBounds, Seq[TypeConKind.Argument])] = Some((tck.bounds, tck.args))
     case class Argument(variance: Variance, kind: Kind)(val sym: Symbol) {}
   }
+
+  trait inferKind
 
   /**
    * Starting from a Symbol (sym) or a Type (tpe), infer the kind that classifies it (sym.tpeHK/tpe).

@@ -88,7 +88,7 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
   def enclosingMethodAttribute(classSym: Symbol, classDesc: Symbol => String, methodDesc: Symbol => String): Option[EnclosingMethodEntry] = {
     if (isAnonymousOrLocalClass(classSym)) {
       val methodOpt = enclosingMethodForEnclosingMethodAttribute(classSym)
-      debuglog(s"enclosing method for $classSym is $methodOpt (in ${methodOpt.map(_.enclClass)})")
+      methodOpt foreach (e => log(s"${classSym.fullNameString} is enclosed by ${e.nameString} in ${e.owner.fullNameString}"))
       Some(EnclosingMethodEntry(
         classDesc(enclosingClassForEnclosingMethodAttribute(classSym)),
         methodOpt.map(_.javaSimpleName.toString).orNull,

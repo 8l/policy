@@ -84,8 +84,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     def apply(sym: Symbol, csymCompUnit: CompilationUnit): Boolean = {
       def fail(msg: String, pos: Position = sym.pos) = {
         reporter.warning(sym.pos,
-          sym.name +
-          s" has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.\n  Reason: $msg"
+          s"${sym.name} has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.\n  Reason: $msg"
           // TODO: make this next claim true, if possible
           //   by generating valid main methods as static in module classes
           //   not sure what the jvm allows here
