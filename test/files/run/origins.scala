@@ -1,4 +1,4 @@
-import scala.reflect.internal.util.Origins
+import policy.Origins
 
 package goxbox {
   object Socks {

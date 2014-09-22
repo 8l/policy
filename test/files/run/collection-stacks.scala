@@ -12,7 +12,7 @@ object Test extends App {
   }
 
   def check[T](expected: T, got: T) {
-    println(got + ": " + (expected == got))
+    println("" + got + ": " + (expected == got))
   }
 
   // check #957

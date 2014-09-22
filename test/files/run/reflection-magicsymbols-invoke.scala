@@ -9,7 +9,7 @@ package scala {
 }
 
 object Test extends App {
-  def key(sym: Symbol) = sym + ": " + sym.info
+  def key(sym: Symbol) = "" + sym + ": " + sym.info
   def test(tpe: Type, receiver: Any, method: String, args: Any*) {
     def wrap[T](op: => T) =
       try {
@@ -20,7 +20,7 @@ object Test extends App {
       } catch {
         case ex: Throwable =>
           val realex = scala.ExceptionUtils.unwrapThrowable(ex)
-          println(realex.getClass + ": " + realex.getMessage)
+          println("" + realex.getClass + ": " + realex.getMessage)
       }
     print(s"testing ${tpe.typeSymbol.name}.$method: ")
     wrap({

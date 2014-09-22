@@ -107,7 +107,7 @@ package ll {
     def fname(sym: Symbol) = {
       val p = "" + sym.owner.name
       val x = if (sym.owner.isPackageClass || sym.owner.isModuleClass || sym.owner.isTerm) "." else "#"
-      sym.kindString + " " + p + x + sym.name
+      "" + sym.kindString + " " + p + x + sym.name
     }
 
     def permuteAsSeenFrom(targs: List[Type]) = (
@@ -164,7 +164,7 @@ package ll {
     for (x <- classes ++ terms) {
       afterEachPhase(signaturesIn(x.tpe)) collect {
         case (ph, sigs) if sigs.nonEmpty =>
-          println(sigs.mkString(x + " { // after " + ph + "\n  ", "\n  ", "\n}\n"))
+          println(sigs.mkString("" + x + " { // after " + ph + "\n  ", "\n  ", "\n}\n"))
       }
     }
   }

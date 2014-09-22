@@ -29,7 +29,7 @@ object Test extends App {
     typed[String](fms1)
     println(fms1)
 
-    val fms2 = s.filterMap(c =>if(c % 2 == 0) Some(c.toInt) else None)
+    val fms2 = s.toIndexedSeq.filterMap(c =>if(c % 2 == 0) Some(c.toInt) else None)
     typed[IndexedSeq[Int]](fms2)
     println(fms2)
   }
@@ -60,7 +60,7 @@ object Test extends App {
     typed[String](fms1)
     println(fms1)
 
-    val fms2 = s.filterMap(c =>if(c % 2 == 0) Some(c.toInt) else None)
+    val fms2 = s.toIndexedSeq.filterMap(c =>if(c % 2 == 0) Some(c.toInt) else None)
     typed[IndexedSeq[Int]](fms2)
     println(fms2)
   }

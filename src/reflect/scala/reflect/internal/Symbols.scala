@@ -2503,11 +2503,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isVariable) "var"
       else if (hasPackageFlag) "package"
       else if (isModule) "object"
-      // This isn't right, but it was printing all these defs as vals
-      // and I got tired of it. Presumably that was because the symbol
-      // wasn't initialized.
-      else if (isTerm && isParamAccessor) "val"
-      else "def"
+      else if (isSourceMethod) "def"
+      else if (isType) ""
+      else if (isParameter && !isParamAccessor) ""
+      else "val"
 
     private def symbolKind: SymbolKind = {
       var kind =
@@ -2532,9 +2531,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (isType) ("type", "type", "TPE")
         else if (isClassConstructor && (owner.hasCompleteInfo && isPrimaryConstructor)) ("primary constructor", "constructor", "PCTOR")
         else if (isClassConstructor) ("constructor", "constructor", "CTOR")
-        // Same here as above, incorrect, but in scalac correctness is a comical notion anyway.
-        else if (isTerm && isParamAccessor) ("value", "value", "VAL")
-        else ("method", "method", "METH")
+        else if (isSourceMethod) ("method", "method", "METH")
+        else if (isTerm) ("value", "value", "VAL")
+        else ("", "", "???")
 
       if (isSkolem) kind = (kind._1, kind._2, "" + kind._3 + "#SKO")
       SymbolKind(kind._1, kind._2, kind._3)

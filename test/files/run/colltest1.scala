@@ -43,7 +43,7 @@ object Test extends App {
     assert(ten.last == 10)
     assert(List(ten.head) ++ ten.tail == ten)
     assert(ten.init ++ List(ten.last) == ten, ten.init)
-    assert(vs1 == vs2, vs1+"!="+vs2)
+    assert(vs1 == vs2, ""+vs1+"!="+vs2)
     assert(vs1 == ten)
     assert((ten take 5) == firstFive)
     assert((ten drop 5) == secondFive)
@@ -185,7 +185,7 @@ object Test extends App {
     assert(m.keySet.size == 26)
     assert(m.size == 26)
     assert(m.keySet == Set() ++ m.keysIterator)
-    assert(m.keySet == m.keysIterator.toList.toSet, m.keySet.toList+"!="+m.keysIterator.toList.toSet)
+    assert(m.keySet == m.keysIterator.toList.toSet, ""+m.keySet.toList+"!="+m.keysIterator.toList.toSet)
     val m1 = empty ++ m
     val mm = m -- m.keySet.toList
     assert(mm.isEmpty, mm)

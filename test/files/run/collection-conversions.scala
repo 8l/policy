@@ -40,7 +40,7 @@ object Test {
     printResult("[Direct] Buffer   ", col.toBuffer, testBuffer)
     printResult("[Copy]   Buffer   ", col.to[Buffer], testBuffer)
     printResult("[Direct] GenSeq   ", col.toSeq, testGenSeq)
-    printResult("[Copy]   GenSeq   ", col.to[GenSeq], testGenSeq)
+    printResult("[Copy]   GenSeq   ", col.to[GenSeq](Seq.canBuildFrom), testGenSeq)
     printResult("[Copy]   Seq      ", col.to[Seq], testSeq)
     printResult("[Direct] Stream   ", col.toStream, testStream)
     printResult("[Copy]   Stream   ", col.to[Stream], testStream)
