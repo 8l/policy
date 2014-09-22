@@ -58,22 +58,6 @@ trait Primitives { self: ICodes =>
   // jvm  : arraylength
   case class ArrayLength(kind: TypeKind) extends Primitive
 
-  // type : (buf,el) => buf
-  // range: lf,rg <- { BOOL, Ix, Ux, Rx, REF, STR }
-  // jvm  : It should call the appropiate 'append' method on StringBuffer
-  case class StringConcat(el: TypeKind) extends Primitive
-
-  /** Signals the beginning of a series of concatenations.
-   *  On the JVM platform, it should create a new StringBuffer
-   */
-  case object StartConcat extends Primitive
-
-  /**
-   * type: (buf) => STR
-   * jvm : It should turn the StringBuffer into a String.
-   */
-  case object EndConcat extends Primitive
-
   /** Pretty printer for primitives */
   class PrimitivePrinter(out: PrintWriter) {
     def print(s: String): PrimitivePrinter = {

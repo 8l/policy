@@ -240,44 +240,13 @@ abstract class ICodeCheckers {
 
     private var instruction: Instruction = null
     private var basicBlock: BasicBlock = null
-    private var stringConcatDepth = 0
-    private def stringConcatIndent() = "  " * stringConcatDepth
-    private def currentInstrString: String = {
-      val (indent, str) = this.instruction match {
-        case CALL_PRIMITIVE(StartConcat)      =>
-          val x = stringConcatIndent()
-          stringConcatDepth += 1
-          (x, "concat(")
-        case CALL_PRIMITIVE(EndConcat)        =>
-          if (stringConcatDepth > 0) {
-            stringConcatDepth -= 1
-            (stringConcatIndent(), ") // end concat")
-          }
-          else ("", "")
-        case _ =>
-          (stringConcatIndent(), this.instruction match {
-            case CALL_PRIMITIVE(StringConcat(el)) => "..."
-            case null                             => "null"
-            case cm @ CALL_METHOD(_, _)           => if (clasz.symbol == cm.hostClass) cm.toShortString else cm.toString
-            case x                                => x.toString
-          })
-      }
-      indent + str
-    }
+
     /** A couple closure creators to reduce noise in the output: when multiple
      *  items are pushed or popped, this lets us print something short and sensible
      *  for those beyond the first.
      */
-    def mkInstrPrinter(f: Int => String): () => String = {
-      var counter = -1
-      val indent = stringConcatIndent()
-      () => {
-        counter += 1
-        if (counter == 0) currentInstrString
-        else indent + f(counter)
-      }
-    }
-    def defaultInstrPrinter: () => String = mkInstrPrinter(_ => "\"\"\"")
+    def mkInstrPrinter(f: Int => String): () => String = () => f(0)
+    def defaultInstrPrinter: () => String              = mkInstrPrinter(_ => "\"\"\"")
 
     /**
      * Check the basic block to be type correct and return the
@@ -563,18 +532,6 @@ abstract class ICodeCheckers {
                  case arr         => icodeError(" array reference expected, but " + arr + " found")
                }
                pushStack(INT)
-
-             case StartConcat =>
-               pushStack(ConcatClass)
-
-             case EndConcat =>
-               checkType(popStack, ConcatClass)
-               pushStack(StringReference)
-
-             case StringConcat(el) =>
-               checkType(popStack, el)
-               checkType(popStack, ConcatClass)
-               pushStack(ConcatClass)
            }
 
          case CALL_METHOD(method, style) =>

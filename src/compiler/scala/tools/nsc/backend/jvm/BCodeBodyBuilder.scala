@@ -228,7 +228,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       import scalaPrimitives.{isArithmeticOp, isArrayOp, isLogicalOp, isComparisonOp}
 
       if (isArithmeticOp(code))                genArithmeticOp(tree, code)
-      else if (code == scalaPrimitives.CONCAT) genStringConcat(tree)
       else if (code == scalaPrimitives.HASH)   genScalaHash(receiver)
       else if (isArrayOp(code))                genArrayOp(tree, code, expectedType)
       else if (isLogicalOp(code) || isComparisonOp(code)) {
@@ -613,7 +612,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               (argsSize : @switch) match {
                 case 1 => bc newarray elemKind
                 case _ =>
-                  val descr = ('[' * argsSize) + elemKind.descriptor // denotes the same as: arrayN(elemKind, argsSize).descriptor
+                  val descr = ("[" * argsSize) + elemKind.descriptor // denotes the same as: arrayN(elemKind, argsSize).descriptor
                   mnode.visitMultiANewArrayInsn(descr, argsSize)
               }
 
@@ -961,29 +960,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       }
     }
 
-    def genStringConcat(tree: Tree): BType = {
-      lineNumber(tree)
-      liftStringConcat(tree) match {
-
-        // Optimization for expressions of the form "" + x.  We can avoid the StringBuilder.
-        case List(Literal(Constant("")), arg) =>
-          genLoad(arg, ObjectReference)
-          genCallMethod(String_valueOf, icodes.opcodes.Static(onInstance = false))
-
-        case concatenations =>
-          bc.genStartConcat
-          for (elem <- concatenations) {
-            val kind = tpeTK(elem)
-            genLoad(elem, kind)
-            bc.genStringConcat(kind)
-          }
-          bc.genEndConcat
-
-      }
-
-      StringReference
-    }
-
     def genCallMethod(method: Symbol, style: InvokeStyle, hostClass0: Symbol = null, pos: Position = NoPosition) {
 
       val siteSymbol = claszSymbol
@@ -1050,21 +1026,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       genCallMethod(hashMethodSym, icodes.opcodes.Static(onInstance = false))
 
       INT
-    }
-
-    /*
-     * Returns a list of trees that each should be concatenated, from left to right.
-     * It turns a chained call like "a".+("b").+("c") into a list of arguments.
-     */
-    def liftStringConcat(tree: Tree): List[Tree] = tree match {
-      case Apply(fun @ Select(larg, method), rarg) =>
-        if (isPrimitive(fun.symbol) &&
-            scalaPrimitives.getPrimitive(fun.symbol) == scalaPrimitives.CONCAT)
-          liftStringConcat(larg) ::: rarg
-        else
-          tree :: Nil
-      case _ =>
-        tree :: Nil
     }
 
     /* Emit code to compare the two top-most stack values using the 'op' operator. */

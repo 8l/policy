@@ -405,8 +405,6 @@ abstract class GenICode extends SubComponent {
 
       if (scalaPrimitives.isArithmeticOp(code))
         genArithmeticOp(tree, ctx, code)
-      else if (code == scalaPrimitives.CONCAT)
-        (genStringConcat(tree, ctx), StringReference)
       else if (code == scalaPrimitives.HASH)
         (genScalaHash(receiver, ctx), INT)
       else if (isArrayOp(code))
@@ -1184,47 +1182,6 @@ abstract class GenICode extends SubComponent {
       }
     )
 
-    // I wrote it this way before I realized all the primitive types are
-    // boxed at this point, so I'd have to unbox them.  Keeping it around in
-    // case we want to get more precise.
-    //
-    // private def valueOfForType(tp: Type): Symbol = {
-    //   val xs = getMember(StringModule, nme.valueOf) filter (sym =>
-    //     // We always exclude the Array[Char] overload because java throws an NPE if
-    //     // you pass it a null.  It will instead find the Object one, which doesn't.
-    //     sym.info.paramTypes match {
-    //       case List(pt) => pt.typeSymbol != ArrayClass && (tp <:< pt)
-    //       case _        => false
-    //     }
-    //   )
-    //   xs.alternatives match {
-    //     case List(sym)  => sym
-    //     case _          => NoSymbol
-    //   }
-    // }
-
-    /** Generate string concatenation.
-     */
-    def genStringConcat(tree: Tree, ctx: Context): Context = {
-      liftStringConcat(tree) match {
-        // Optimization for expressions of the form "" + x.  We can avoid the StringBuilder.
-        case List(Literal(Constant("")), arg) =>
-          val ctx1 = genLoad(arg, ctx, ObjectReference)
-          ctx1.bb.emit(CALL_METHOD(String_valueOf, Static(onInstance = false)), arg.pos)
-          ctx1
-        case concatenations =>
-          var ctx1 = ctx
-          ctx1.bb.emit(CALL_PRIMITIVE(StartConcat), tree.pos)
-          for (elem <- concatenations) {
-            val kind = toTypeKind(elem.tpe)
-            ctx1 = genLoad(elem, ctx1, kind)
-            ctx1.bb.emit(CALL_PRIMITIVE(StringConcat(kind)), elem.pos)
-          }
-          ctx1.bb.emit(CALL_PRIMITIVE(EndConcat), tree.pos)
-          ctx1
-      }
-    }
-
     /** Generate the scala ## method.
      */
     def genScalaHash(tree: Tree, ctx: Context): Context = {
@@ -1236,22 +1193,6 @@ abstract class GenICode extends SubComponent {
       val ctx1 = genLoad(tree, ctx, ObjectReference)
       ctx1.bb.emit(CALL_METHOD(hashMethod, Static(onInstance = false)))
       ctx1
-    }
-
-    /**
-     * Returns a list of trees that each should be concatenated, from
-     * left to right. It turns a chained call like "a".+("b").+("c") into
-     * a list of arguments.
-     */
-    def liftStringConcat(tree: Tree): List[Tree] = tree match {
-      case Apply(fun @ Select(larg, method), rarg) =>
-        if (isPrimitive(fun.symbol) &&
-            scalaPrimitives.getPrimitive(fun.symbol) == scalaPrimitives.CONCAT)
-          liftStringConcat(larg) ::: rarg
-        else
-          List(tree)
-      case _ =>
-        List(tree)
     }
 
     /**

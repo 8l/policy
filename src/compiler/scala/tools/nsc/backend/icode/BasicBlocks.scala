@@ -485,8 +485,8 @@ trait BasicBlocks {
       val xs = this.toList map (instr => posStr(instr.pos) + "\t" + instr)
       xs.mkString(fullString + " {\n  ", "\n  ", "\n}")
     }
-    def predContents = predecessors.map(_.blockContents).mkString(predecessors.size + " preds:\n", "\n", "\n")
-    def succContents = successors.map(_.blockContents).mkString(successors.size + " succs:\n", "\n", "\n")
+    def predContents = predecessors.map(_.blockContents).mkString("" + predecessors.size + " preds:\n", "\n", "\n")
+    def succContents = successors.map(_.blockContents).mkString("" + successors.size + " succs:\n", "\n", "\n")
 
     def fullString: String = List("Block", label, succString, predString, flagsString) mkString " "
     def flagsString: String = BBFlags.flagsToString(flags)

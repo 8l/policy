@@ -69,7 +69,7 @@ import scala.io.StdIn
  *  Short value to a Long value as required, and to add additional higher-order
  *  functions to Array values. These are described in more detail in the documentation of [[scala.Array]].
  */
-object Predef extends LowPriorityImplicits with DeprecatedPredef {
+object Predef extends LowPriorityImplicits with DeprecatedPredef with LowPriorityString1 {
   /**
    * Retrieve the runtime representation of a class type. `classOf[T]` is equivalent to
    * the class literal `T.class` in Java.
@@ -266,8 +266,8 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     @inline def formatted(fmtstr: String): String = fmtstr format self
   }
 
-  // Binary compatibility.
-  final def any2stringadd[A](self: A): BadPredef.any2stringadd[A] = new BadPredef.any2stringadd[A](self)
+  // Source compatibility.
+  def any2stringadd[A](self: A): BadPredef.any2stringadd[A] = new BadPredef.any2stringadd[A](self)
 
   implicit final class RichException(private val self: Throwable) extends AnyVal {
     import scala.compat.Platform.EOL
@@ -292,9 +292,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     def apply(from: String) = apply()
     def apply()             = mutable.StringBuilder.newBuilder
   }
-
-  @inline implicit def augmentString(x: String): StringOps   = new StringOps(x)
-  @inline implicit def unaugmentString(x: StringOps): String = x.repr
 
   // printing -----------------------------------------------------------
 
@@ -406,6 +403,29 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
      */
     implicit def dummyImplicit: DummyImplicit = new DummyImplicit
   }
+
+  @inline final implicit def stringAddition(s: String): StringAddition = new StringAddition( if (s == null) "null" else s )
+}
+
+final class StringAddition private[scala] (val __string_addition: String) extends AnyVal {
+  def +(other: Any): String = {
+    val sb = new StringBuilder
+    sb append __string_addition
+    sb append other
+    // sb.trimToSize()
+    sb.toString
+  }
+  override def toString = __string_addition
+}
+
+private[scala] trait LowPriorityString1 extends LowPriorityString2 {
+  @inline implicit def augmentString(x: String): StringOps   = new StringOps(x)
+  @inline implicit def unaugmentString(x: StringOps): String = x.repr
+}
+
+private[scala] trait LowPriorityString2 {
+  implicit def wrapString(s: String): WrappedString    = if (s ne null) new WrappedString(s) else null
+  implicit def unwrapString(ws: WrappedString): String = if (ws ne null) ws.self else null
 }
 
 private[scala] trait DeprecatedPredef {
@@ -488,28 +508,6 @@ private[scala] abstract class LowPriorityImplicits {
   implicit def wrapShortArray(xs: Array[Short]): WrappedArray[Short]       = if (xs ne null) new WrappedArray.ofShort(xs) else null
   implicit def wrapBooleanArray(xs: Array[Boolean]): WrappedArray[Boolean] = if (xs ne null) new WrappedArray.ofBoolean(xs) else null
   implicit def wrapUnitArray(xs: Array[Unit]): WrappedArray[Unit]          = if (xs ne null) new WrappedArray.ofUnit(xs) else null
-  implicit def wrapString(s: String): WrappedString                        = if (s ne null) new WrappedString(s) else null
-  implicit def unwrapString(ws: WrappedString): String                     = if (ws ne null) ws.self else null
-}
-
-object NewPredef {
-  implicit final class ProperStringOps(private val self: String) extends AnyVal {
-    @inline def + (that: String): String = {
-      val sb = new StringBuilder
-      sb append self
-      sb append that
-      sb.toString
-    }
-    @inline def flatMap(f: Char => String): String = {
-      val sb = new StringBuilder
-      var i = 0
-      while (i < self.length) {
-        sb append f(self charAt i)
-        i += 1
-      }
-      sb.toString
-    }
-  }
 }
 
 // Storage for the inanities of Predef which we've eliminated.

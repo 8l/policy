@@ -205,40 +205,6 @@ abstract class BCodeIdiomatic extends SubComponent {
     } // end of method genPrimitiveShift()
 
     /*
-     * can-multi-thread
-     */
-    final def genStartConcat {
-      jmethod.visitTypeInsn(Opcodes.NEW, StringBuilderClassName)
-      jmethod.visitInsn(Opcodes.DUP)
-      invokespecial(
-        StringBuilderClassName,
-        INSTANCE_CONSTRUCTOR_NAME,
-        "()V"
-      )
-    }
-
-    /*
-     * can-multi-thread
-     */
-    final def genStringConcat(el: BType) {
-
-      val jtype =
-        if (el.isArray || el.isClass) ObjectReference
-        else el
-
-      val bt = MethodBType(List(jtype), StringBuilderReference)
-
-      invokevirtual(StringBuilderClassName, "append", bt.descriptor)
-    }
-
-    /*
-     * can-multi-thread
-     */
-    final def genEndConcat {
-      invokevirtual(StringBuilderClassName, "toString", "()Ljava/lang/String;")
-    }
-
-    /*
      * Emits one or more conversion instructions based on the types given as arguments.
      *
      * @param from The type of the value to be converted into another type.

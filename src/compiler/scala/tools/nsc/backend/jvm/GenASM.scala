@@ -2614,29 +2614,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
           case ArrayLength(_) => emit(Opcodes.ARRAYLENGTH)
 
-          case StartConcat =>
-            jmethod.visitTypeInsn(Opcodes.NEW, StringBuilderClassName)
-            jmethod.visitInsn(Opcodes.DUP)
-            jcode.invokespecial(
-              StringBuilderClassName,
-              INSTANCE_CONSTRUCTOR_NAME,
-              mdesc_arglessvoid
-            )
-
-          case StringConcat(el) =>
-            val jtype = el match {
-              case REFERENCE(_) | ARRAY(_) => JAVA_LANG_OBJECT
-              case _ => javaType(el)
-            }
-            jcode.invokevirtual(
-              StringBuilderClassName,
-              "append",
-              asm.Type.getMethodDescriptor(StringBuilderType, Array(jtype): _*)
-            )
-
-          case EndConcat =>
-            jcode.invokevirtual(StringBuilderClassName, "toString", mdesc_toString)
-
           case _ => abort("Unimplemented primitive " + primitive)
         }
       } // end of genCode()'s genPrimitive()

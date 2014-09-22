@@ -58,6 +58,17 @@ abstract class TreeBuilder {
   def makeBinop(isExpr: Boolean, left: Tree, op: TermName, right: Tree, opPos: Position, targs: List[Tree] = Nil): Tree = {
     require(isExpr || targs.isEmpty || targs.exists(_.isErroneous), s"Incompatible args to makeBinop: !isExpr but targs=$targs")
 
+    // XXX An offensive hack while we try to figure out where to recover
+    // String constant folding.
+    if (op == nme.raw.PLUS) {
+      (left, right) match {
+        case (Literal(Constant(s1: String)), Literal(Constant(s2: String))) =>
+          log(s"folded String literals $s1 + $s2 == ${ s1 + s2 }")
+          return atPos(left.pos union right.pos)(Literal(Constant(s1 + s2)))
+        case _                                                              =>
+      }
+    }
+
     def mkSelection(t: Tree) = {
       def sel = atPos(opPos union t.pos)(Select(stripParens(t), op.encode))
       if (targs.isEmpty) sel else atPos(left.pos)(TypeApply(sel, targs))

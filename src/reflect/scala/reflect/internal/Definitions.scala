@@ -353,7 +353,6 @@ trait Definitions extends api.StandardDefinitions {
          def Symbol_apply       = getMemberMethod(SymbolModule, nme.apply)
 
     // classes with special meanings
-    lazy val StringAddClass             = requiredClass[scala.runtime.StringAdd]
     lazy val ScalaNumberClass           = requiredClass[scala.math.ScalaNumber]
     lazy val TraitSetterAnnotationClass = requiredClass[scala.runtime.TraitSetter]
     lazy val DelayedInitClass           = requiredClass[scala.DelayedInit]
@@ -1050,7 +1049,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps =>
       (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
     )
-    lazy val String_+ = enterNewMethod(StringClass, nme.raw.PLUS, AnyTpe :: Nil, StringTpe, FINAL)
 
     def Object_getClass  = getMemberMethod(ObjectClass, nme.getClass_)
     def Object_clone     = getMemberMethod(ObjectClass, nme.clone_)
@@ -1314,8 +1312,7 @@ trait Definitions extends api.StandardDefinitions {
       Object_##,
       Object_synchronized,
       Object_isInstanceOf,
-      Object_asInstanceOf,
-      String_+
+      Object_asInstanceOf
     )
     /** Lists core classes that do have underlying bytecode, but are adjusted on-the-fly in every reflection universe */
     lazy val hijackedCoreClasses = List(
@@ -1404,11 +1401,6 @@ trait Definitions extends api.StandardDefinitions {
 
     /** Efficient access to member symbols which must be looked up each run. Access via `currentRun.runDefinitions` */
     final class RunDefinitions {
-      lazy val StringAdd_+ = getMemberMethod(StringAddClass, nme.PLUS)
-
-      // The given symbol represents either String.+ or StringAdd.+
-      def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+
-
       lazy val StringContext_f = getMemberMethod(StringContextClass, nme.f)
 
       lazy val ArrowAssocClass = getMemberClass(PredefModule, TypeName("ArrowAssoc")) // SI-5731

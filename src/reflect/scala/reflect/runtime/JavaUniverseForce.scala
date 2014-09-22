@@ -240,7 +240,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.SpecializableModule
     definitions.ScalaRunTimeModule
     definitions.SymbolModule
-    definitions.StringAddClass
     definitions.ScalaNumberClass
     definitions.TraitSetterAnnotationClass
     definitions.DelayedInitClass
@@ -340,7 +339,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.Object_isInstanceOf
     definitions.Object_asInstanceOf
     definitions.Object_synchronized
-    definitions.String_$plus
     definitions.ObjectRefClass
     definitions.VolatileObjectRefClass
     definitions.RuntimeStaticsModule

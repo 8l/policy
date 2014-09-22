@@ -226,9 +226,6 @@ abstract class TypeFlowAnalysis {
             case Shift(op, kind)      => stack.pop2; stack push kind
             case Conversion(src, dst) => stack.pop;  stack push dst
             case ArrayLength(kind)    => stack.pop;  stack push INT
-            case StartConcat          => stack.push(ConcatClass)
-            case EndConcat            => stack.pop;  stack.push(STRING)
-            case StringConcat(el)     => stack.pop2; stack push ConcatClass
           }
 
         case cm @ CALL_METHOD(_, _) =>

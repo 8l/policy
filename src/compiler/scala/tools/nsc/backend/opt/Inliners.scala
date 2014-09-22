@@ -550,7 +550,7 @@ abstract class Inliners extends SubComponent {
           val s2      = if (sizeBeforeInlining == m.code.blockCount) "" else s", blocks $sizeBeforeInlining -> ${m.code.blockCount}"
           val callees = inlinedMethodCount.toList map { case (k, v) => k.fullNameString + ( if (v == 1) "" else "/" + v ) }
 
-          inlineLog("inlined", m.symbol.fullName, callees.sorted.mkString(inlinings + " inlined: ", ", ", ""))
+          inlineLog("inlined", m.symbol.fullName, callees.sorted.mkString("" + inlinings + " inlined: ", ", ", ""))
           inlineLog("<<tldr>>", m.symbol.fullName, s"${m.symbol.nameString}: $s1$s2")
         }
       }

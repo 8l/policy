@@ -216,7 +216,7 @@ trait Constants extends api.Constants {
     }
 
     def escapedStringValue: String = {
-      def escape(text: String): String = new NewPredef.ProperStringOps(text) flatMap escapedChar
+      def escape(text: String): String = new ProperStringOps(text) flatMap escapedChar
       tag match {
         case NullTag   => "null"
         case StringTag => "\"" + escape(stringValue) + "\""
@@ -272,4 +272,16 @@ trait Constants extends api.Constants {
   object Constant extends ConstantExtractor
 
   implicit val ConstantTag = ClassTag[Constant](classOf[Constant])
+}
+
+final class ProperStringOps(private val self: String) extends AnyVal {
+  @inline def flatMap(f: Char => String): String = {
+    val sb = new StringBuilder
+    var i = 0
+    while (i < self.length) {
+      sb append f(self charAt i)
+      i += 1
+    }
+    sb.toString
+  }
 }

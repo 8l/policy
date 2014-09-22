@@ -301,9 +301,6 @@ trait Opcodes { self: ICodes =>
         case Shift(_,_)        => 2
         case Conversion(_,_)   => 1
         case ArrayLength(_)    => 1
-        case StringConcat(_)   => 2
-        case StartConcat       => 0
-        case EndConcat         => 1
       }
       override def produced = 1
 
@@ -318,9 +315,6 @@ trait Opcodes { self: ICodes =>
         case Shift(_, kind)        => kind :: INT :: Nil
         case Conversion(from, _)   => from :: Nil
         case ArrayLength(kind)     => ARRAY(kind) :: Nil
-        case StringConcat(kind)    => ConcatClass :: kind :: Nil
-        case StartConcat           => Nil
-        case EndConcat             => ConcatClass :: Nil
       }
 
       override def producedTypes = primitive match {
@@ -333,9 +327,6 @@ trait Opcodes { self: ICodes =>
         case Shift(_, kind)      => kind :: Nil
         case Conversion(_, to)   => to :: Nil
         case ArrayLength(_)      => INT :: Nil
-        case StringConcat(_)     => ConcatClass :: Nil
-        case StartConcat         => ConcatClass :: Nil
-        case EndConcat           => REFERENCE(global.definitions.StringClass) :: Nil
       }
 
       override def category = arilogCat

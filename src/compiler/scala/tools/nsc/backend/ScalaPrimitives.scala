@@ -85,9 +85,6 @@ abstract class ScalaPrimitives {
   // AnyRef operations
   final val SYNCHRONIZED = 90                  // x.synchronized(y)
 
-  // String operations
-  final val CONCAT = 100                       // String.valueOf(x)+String.valueOf(y)
-
   // coercions
   final val COERCE = 101
 
@@ -210,9 +207,6 @@ abstract class ScalaPrimitives {
     addPrimitive(Object_synchronized, SYNCHRONIZED)
     addPrimitive(Object_isInstanceOf, IS)
     addPrimitive(Object_asInstanceOf, AS)
-
-    // java.lang.String
-    addPrimitive(String_+, CONCAT)
 
     // scala.Array
     addPrimitives(ArrayClass, nme.length, LENGTH)
@@ -445,14 +439,8 @@ abstract class ScalaPrimitives {
     val alts = (cls.info member method).alternatives
     if (alts.isEmpty)
       inform(s"Unknown primitive method $cls.$method")
-    else alts foreach (s =>
-      addPrimitive(s,
-        s.info.paramTypes match {
-          case tp :: _ if code == ADD && tp =:= StringTpe => CONCAT
-          case _                                          => code
-        }
-      )
-    )
+    else
+      alts foreach (s => addPrimitive(s, code))
   }
 
   def isCoercion(code: Int): Boolean = (code >= B2B) && (code <= D2D)
