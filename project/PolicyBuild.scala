@@ -34,9 +34,10 @@ object PolicyBuild extends sbt.Build with LibSbt {
     val rev    = sbtBuildProps.buildVersion
     val lib    = (classDirectory in Compile in library).value
     val comp   = (classDirectory in Compile in compiler).value
-    val extras = buildJars.value.toList
+    val extras = buildJars.value.toList ++ state.value.download(jline).jarFiles
     val jars   = lib :: comp :: extras map (_.toURI.toURL) toArray
     val loader = new URLClassLoader(jars, null)
+
     printResult("Created ScalaInstance from built jars")(
       new ScalaInstance(
         version        = rev,
