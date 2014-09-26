@@ -54,9 +54,6 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
     }
     private def mkTerm(prefix: String): TermName = unit.freshTermName(prefix)
 
-    //private val classConstantMeth = new HashMap[String, Symbol]
-    //private val symbolStaticFields = new HashMap[String, (Symbol, Tree, Tree)]
-
     private var localTyper: analyzer.Typer = null
 
     private def typedWithPos(pos: Position)(tree: Tree) =

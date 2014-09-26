@@ -497,8 +497,6 @@ trait Definitions extends api.StandardDefinitions {
          def MacroContextPrefixType       = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.PrefixType))
          def MacroContextUniverse         = BlackboxContextClass.map(sym => getMemberMethod(sym, nme.universe))
          def MacroContextExprClass        = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.Expr))
-         def MacroContextWeakTypeTagClass = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.WeakTypeTag))
-         def MacroContextTreeType         = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.Tree))
     lazy val MacroImplAnnotation          = requiredClass[scala.reflect.macros.internal.macroImpl]
 
     lazy val StringContextClass           = requiredClass[scala.StringContext]
@@ -662,17 +660,6 @@ trait Definitions extends api.StandardDefinitions {
 
       def productProj(z:Symbol, j: Int): TermSymbol = getMemberValue(z, nme.productAccessorName(j))
 
-    /** if tpe <: ProductN[T1,...,TN], returns List(T1,...,TN) else Nil */
-    @deprecated("No longer used", "2.11.0") def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNSymbol match {
-      case Some(x)  => tpe.baseType(x).typeArgs
-      case _        => Nil
-    }
-
-    @deprecated("No longer used", "2.11.0") def unapplyUnwrap(tpe:Type) = tpe.finalResultType.dealiasWiden match {
-      case RefinedType(p :: _, _) => p.dealiasWiden
-      case tp                     => tp
-    }
-
     def getterMemberTypes(tpe: Type, getters: List[Symbol]): List[Type] =
       getters map (m => dropNullaryMethod(tpe memberType m))
 
@@ -824,7 +811,6 @@ trait Definitions extends api.StandardDefinitions {
     def byNameType(arg: Type)        = appliedType(ByNameParamClass, arg)
     def iteratorOfType(tp: Type)     = appliedType(IteratorClass, tp)
     def javaRepeatedType(arg: Type)  = appliedType(JavaRepeatedParamClass, arg)
-    def optionType(tp: Type)         = appliedType(OptionClass, tp)
     def scalaRepeatedType(arg: Type) = appliedType(RepeatedParamClass, arg)
     def seqType(arg: Type)           = appliedType(SeqClass, arg)
 
@@ -1087,7 +1073,6 @@ trait Definitions extends api.StandardDefinitions {
 
     // Annotations
     lazy val BridgeClass                = requiredClass[scala.annotation.bridge]
-    lazy val ElidableMethodClass        = requiredClass[scala.annotation.elidable]
     lazy val ImplicitNotFoundClass      = requiredClass[scala.annotation.implicitNotFound]
     lazy val MigrationAnnotationClass   = requiredClass[scala.annotation.migration]
     lazy val ScalaStrictFPAttr          = requiredClass[scala.annotation.strictfp]
@@ -1390,7 +1375,6 @@ trait Definitions extends api.StandardDefinitions {
       lazy val flagsType        = universeMemberType(tpnme.FlagSet)
       lazy val symbolType       = universeMemberType(tpnme.Symbol)
       lazy val treeType         = universeMemberType(tpnme.Tree)
-      lazy val caseDefType      = universeMemberType(tpnme.CaseDef)
       lazy val liftableType     = universeMemberType(tpnme.Liftable)
       lazy val unliftableType   = universeMemberType(tpnme.Unliftable)
       lazy val iterableTreeType = appliedType(IterableClass, treeType)

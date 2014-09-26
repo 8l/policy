@@ -137,13 +137,6 @@ trait Position extends Attachments {
    */
   @deprecated("Removed from the public API", "2.11.0") def pointOrElse(default: Int): Int
 
-  /** The start of the position's range, or point if not a range position. */
-  @deprecated("Removed from the public API", "2.11.0") def startOrPoint: Int
-
-  /** The end of the position's range, or point if not a range position.
-   */
-  @deprecated("Removed from the public API", "2.11.0") def endOrPoint: Int
-
   /** If this is a range, the union with the other range, with the point of this position.
    *  Otherwise, this position
    */
@@ -191,10 +184,6 @@ trait Position extends Attachments {
    *  Holds only if both position are ranges
    */
   @deprecated("Removed from the public API", "2.11.0") def sameRange(pos: Pos): Boolean
-
-  /** Convert this to a position around `point` that spans a single source line
-   */
-  @deprecated("Removed from the public API", "2.11.0") def toSingleLine: Pos
 
   /** The content of the line this Position refers to.
    *  @group Common

@@ -28,7 +28,6 @@ private[internal] trait TypeConstraints {
     /** Undo all changes to constraints to type variables upto `limit`. */
     //OPT this method is public so we can do `manual inlining`
     def undoTo(limit: UndoPairs) {
-      assertCorrectThread()
       while ((log ne limit) && log.nonEmpty) {
         val UndoPair(tv, constr) = log.head
         tv.constr = constr

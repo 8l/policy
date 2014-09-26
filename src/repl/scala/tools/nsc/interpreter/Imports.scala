@@ -30,8 +30,6 @@ trait Imports {
   def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
   def languageWildcardHandlers = languageWildcardSyms map makeWildcardImportHandler
 
-  def allImportedNames = importHandlers flatMap (_.importedNames)
-
   /** Types which have been wildcard imported, such as:
    *    val x = "abc" ; import x._  // type java.lang.String
    *    import java.lang.String._   // object java.lang.String

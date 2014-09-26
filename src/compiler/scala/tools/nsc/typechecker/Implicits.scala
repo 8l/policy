@@ -103,27 +103,6 @@ trait Implicits {
     result.tree
   }
 
-  /** Find all views from type `tp` (in which `tpars` are free)
-   *
-   * Note that the trees in the search results in the returned list share the same type variables.
-   * Ignore their constr field! The list of type constraints returned along with each tree specifies the constraints that
-   * must be met by the corresponding type parameter in `tpars` (for the returned implicit view to be valid).
-   *
-   * @arg tp      from-type for the implicit conversion
-   * @arg context search implicits here
-   * @arg tpars   symbols that should be considered free type variables
-   *              (implicit search should not try to solve them, just track their constraints)
-   */
-  def allViewsFrom(tp: Type, context: Context, tpars: List[Symbol]): List[(SearchResult, List[TypeConstraint])] = {
-    // my untouchable typevars are better than yours (they can't be constrained by them)
-    val tvars = tpars map (TypeVar untouchable _)
-    val tpSubsted = tp.subst(tpars, tvars)
-
-    val search = new ImplicitSearch(EmptyTree, functionType(List(tpSubsted), AnyTpe), true, context.makeImplicit(reportAmbiguousErrors = false))
-
-    search.allImplicitsPoly(tvars)
-  }
-
   private final val sizeLimit = 50000
   private type Infos = List[ImplicitInfo]
   private type Infoss = List[List[ImplicitInfo]]

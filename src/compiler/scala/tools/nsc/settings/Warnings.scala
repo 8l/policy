@@ -79,18 +79,6 @@ trait Warnings {
   def warnPackageObjectClasses   = lint contains PackageObjectClasses
   def warnUnsoundMatch           = lint contains UnsoundMatch
 
-  // Lint warnings that are currently -Y, but deprecated in that usage
-  @deprecated("Use warnAdaptedArgs", since="2.11.2")
-  def YwarnAdaptedArgs = warnAdaptedArgs
-  @deprecated("Use warnNullaryUnit", since="2.11.2")
-  def YwarnNullaryUnit = warnNullaryUnit
-  @deprecated("Use warnInaccessible", since="2.11.2")
-  def YwarnInaccessible = warnInaccessible
-  @deprecated("Use warnNullaryOverride", since="2.11.2")
-  def YwarnNullaryOverride = warnNullaryOverride
-  @deprecated("Use warnInferAny", since="2.11.2")
-  def YwarnInferAny = warnInferAny
-
   // The Xlint warning group.
   val lint = MultiChoiceSetting(
     name    = "-Xlint",
@@ -110,7 +98,5 @@ trait Warnings {
   private lazy val warnSelectNullable = BooleanSetting("-Xcheck-null", "This option is obsolete and does nothing.")
 
   // Backward compatibility.
-  @deprecated("Use fatalWarnings", "2.11.0") def Xwarnfatal            = fatalWarnings      // used by sbt
-  @deprecated("This option is being removed", "2.11.0") def Xchecknull = warnSelectNullable // used by ide
-  @deprecated("Use warnDeadCode", "2.11.0") def Ywarndeadcode          = warnDeadCode       // used by ide
+  @deprecated("Use fatalWarnings", "2.11.0") def Xwarnfatal = fatalWarnings      // used by sbt
 }

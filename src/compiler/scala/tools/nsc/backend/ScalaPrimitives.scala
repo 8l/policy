@@ -85,9 +85,6 @@ abstract class ScalaPrimitives {
   // AnyRef operations
   final val SYNCHRONIZED = 90                  // x.synchronized(y)
 
-  // coercions
-  final val COERCE = 101
-
   // RunTime operations
   final val BOX = 110                          // RunTime.box_<X>(x)
   final val UNBOX = 111                        // RunTime.unbox_<X>(x)

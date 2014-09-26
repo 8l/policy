@@ -15,12 +15,9 @@ import java.util.jar.Attributes.{ Name => AttributeName }
 
 /** Loads `library.properties` from the jar. */
 object Properties extends PropertiesTrait {
-  protected def propCategory    = "library"
-  protected def pickJarBasedOn  = classOf[Option[_]]
-
-  /** Scala manifest attributes.
-   */
-  val ScalaCompilerVersion = new AttributeName("Scala-Compiler-Version")
+  protected def propCategory   = "library"
+  protected def pickJarBasedOn = classOf[Option[_]]
+  def ScalaCompilerVersion     = new AttributeName("Scala-Compiler-Version")
 }
 
 private[scala] trait PropertiesTrait {

@@ -203,13 +203,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
   }
 
-  /** Representing ASTs as graphs */
-  object treeBrowsers extends {
-    val global: Global.this.type = Global.this
-  } with TreeBrowsers
-
   val nodeToString = nodePrinters.nodeToString
-  val treeBrowser = treeBrowsers.create()
 
   // ------------ Hooks for interactive mode-------------------------
 
@@ -1360,10 +1354,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         // print members
         if (settings.Yshow containsPhase globalPhase)
           showMembers()
-
-        // browse trees with swing tree viewer
-        if (settings.browse containsPhase globalPhase)
-          treeBrowser browse (phase.name, units)
 
         // move the pointer
         globalPhase = globalPhase.next

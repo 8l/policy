@@ -14,8 +14,7 @@ import scala.collection.immutable.WrappedString
 import scala.collection.mutable.ArrayOps
 import scala.collection.mutable.WrappedArray
 import scala.collection.generic.CanBuildFrom
-import scala.annotation.{ elidable, implicitNotFound }
-import scala.annotation.elidable.ASSERTION
+import scala.annotation.implicitNotFound
 import scala.annotation.unchecked.uncheckedPure
 import scala.language.{implicitConversions, existentials}
 import scala.io.StdIn
@@ -143,28 +142,20 @@ import scala.io.StdIn
   def error(message: String): Nothing = scala.sys.`package`.error(message)
 
   /** Tests an expression, throwing an `AssertionError` if false.
-   *  Calls to this method will not be generated if `-Xelide-below`
-   *  is at least `ASSERTION`.
    *
-   *  @see elidable
    *  @param assertion   the expression to test
    */
-  @elidable(ASSERTION)
   def assert(assertion: Boolean) {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed")
   }
 
   /** Tests an expression, throwing an `AssertionError` if false.
-   *  Calls to this method will not be generated if `-Xelide-below`
-   *  is at least `ASSERTION`.
    *
-   *  @see elidable
    *  @param assertion   the expression to test
    *  @param message     a String to include in the failure message
    */
-  @elidable(ASSERTION) @inline
-  final def assert(assertion: Boolean, message: => Any) {
+  @inline final def assert(assertion: Boolean, message: => Any) {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed: "+ message)
   }
@@ -172,13 +163,10 @@ import scala.io.StdIn
   /** Tests an expression, throwing an `AssertionError` if false.
    *  This method differs from assert only in the intent expressed:
    *  assert contains a predicate which needs to be proven, while
-   *  assume contains an axiom for a static checker.  Calls to this method
-   *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
+   *  assume contains an axiom for a static checker.
    *
-   *  @see elidable
    *  @param assumption   the expression to test
    */
-  @elidable(ASSERTION)
   def assume(assumption: Boolean) {
     if (!assumption)
       throw new java.lang.AssertionError("assumption failed")
@@ -187,14 +175,12 @@ import scala.io.StdIn
   /** Tests an expression, throwing an `AssertionError` if false.
    *  This method differs from assert only in the intent expressed:
    *  assert contains a predicate which needs to be proven, while
-   *  assume contains an axiom for a static checker.  Calls to this method
-   *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
+   *  assume contains an axiom for a static checker.
    *
-   *  @see elidable
    *  @param assumption   the expression to test
    *  @param message      a String to include in the failure message
    */
-  @elidable(ASSERTION) @inline
+  @inline
   final def assume(assumption: Boolean, message: => Any) {
     if (!assumption)
       throw new java.lang.AssertionError("assumption failed: "+ message)

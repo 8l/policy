@@ -218,7 +218,6 @@ trait StdNames {
     final val WILDCARD_STAR: NameType                  = "_*"
     final val REIFY_TREECREATOR_PREFIX: NameType       = "$treecreator"
     final val REIFY_TYPECREATOR_PREFIX: NameType       = "$typecreator"
-    final val MACRO_BUNDLE_SUFFIX: NameType            = "$Bundle"
 
     final val Any: NameType             = "Any"
     final val AnyVal: NameType          = "AnyVal"

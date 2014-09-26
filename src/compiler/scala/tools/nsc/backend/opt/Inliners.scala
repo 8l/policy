@@ -73,9 +73,6 @@ abstract class Inliners extends SubComponent {
     if (needsLookup) lookup(clazz) else sym
   }
 
-  /* A warning threshold */
-  private final val MAX_INLINE_MILLIS = 2000
-
   /** The maximum size in basic blocks of methods considered for inlining. */
   final val MAX_INLINE_SIZE = 16
 

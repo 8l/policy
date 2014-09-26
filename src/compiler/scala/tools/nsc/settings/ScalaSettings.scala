@@ -9,7 +9,6 @@ package tools
 package nsc
 package settings
 
-import scala.annotation.elidable
 import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
 import scala.language.{implicitConversions, existentials}
@@ -101,8 +100,6 @@ trait ScalaSettings extends AbsScalaSettings
   val checkInit          = BooleanSetting      ("-Xcheckinit", "Wrap field accessors to throw an exception on uninitialized access.")
   val developer          = BooleanSetting      ("-Xdev", "Indicates user is a developer - issue warnings about anything which seems amiss")
   val noassertions       = BooleanSetting      ("-Xdisable-assertions", "Generate no assertions or assumptions.")
-  val elidebelow         = IntSetting          ("-Xelide-below", "Calls to @elidable methods are omitted if method priority is lower than argument",
-                                                elidable.MINIMUM, None, elidable.byName get _)
   val noForwarders       = BooleanSetting      ("-Xno-forwarders", "Do not generate static forwarders in mirror classes.")
   val genPhaseGraph      = StringSetting       ("-Xgenerate-phase-graph", "file", "Generate the phase graphs (outputs .dot files) to fileX.dot.", "")
   val XlogImplicits      = BooleanSetting      ("-Xlog-implicits", "Show more detail on why some implicits are not applicable.")
@@ -272,7 +269,6 @@ trait ScalaSettings extends AbsScalaSettings
    */
   val future        = BooleanSetting("-Xfuture", "Turn on future language features.") enablingIfNotSetByUser futureSettings
   val optimise      = BooleanSetting("-optimise", "Generates faster bytecode by applying optimisations to the program") withAbbreviation "-optimize" enablingIfNotSetByUser optimiseSettings
-  val nooptimise    = BooleanSetting("-Ynooptimise", "Clears all the flags set by -optimise. Useful for testing optimizations in isolation.") withAbbreviation "-Ynooptimize" disabling optimise::optimiseSettings
   val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions.") enablingIfNotSetByUser experimentalSettings
 
   /**

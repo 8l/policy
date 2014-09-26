@@ -7,7 +7,6 @@ package scala
 package reflect
 package internal
 
-import scala.annotation.elidable
 import scala.collection.{ mutable, immutable }
 import util._
 import java.util.concurrent.TimeUnit
@@ -85,40 +84,6 @@ abstract class SymbolTable extends macros.Universe
     result
   }
 
-  private[scala] def printResult[T](msg: String)(result: T) = {
-    Console.err.println(msg + ": " + result)
-    result
-  }
-  @inline
-  final private[scala] def logResult[T](msg: => String)(result: T): T = {
-    log(msg + ": " + result)
-    result
-  }
-  @inline
-  final private[scala] def debuglogResult[T](msg: => String)(result: T): T = {
-    debuglog(msg + ": " + result)
-    result
-  }
-  @inline
-  final private[scala] def devWarningResult[T](msg: => String)(result: T): T = {
-    devWarning(msg + ": " + result)
-    result
-  }
-  @inline
-  final private[scala] def logResultIf[T](msg: => String, cond: T => Boolean)(result: T): T = {
-    if (cond(result))
-      log(msg + ": " + result)
-
-    result
-  }
-  @inline
-  final private[scala] def debuglogResultIf[T](msg: => String, cond: T => Boolean)(result: T): T = {
-    if (cond(result))
-      debuglog(msg + ": " + result)
-
-    result
-  }
-
   @inline final def findSymbol(xs: TraversableOnce[Symbol])(p: Symbol => Boolean): Symbol = {
     xs find p getOrElse NoSymbol
   }
@@ -144,11 +109,6 @@ abstract class SymbolTable extends macros.Universe
   } with util.TraceSymbolActivity
 
   val treeInfo: TreeInfo { val global: SymbolTable.this.type }
-
-  /** Check that the executing thread is the compiler thread. No-op here,
-   *  overridden in interactive.Global. */
-  @elidable(elidable.WARNING)
-  def assertCorrectThread() {}
 
   /** A last effort if symbol in a select <owner>.<name> is not found.
    *  This is overridden by the reflection compiler to make up a package

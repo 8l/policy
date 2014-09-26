@@ -273,8 +273,6 @@ abstract class ICodeReader extends ClassfileParser {
   var maxStack: Int = _
   var maxLocals: Int = _
   val JVM = ClassfileConstants // shorter, uppercase alias for use in case patterns
-
-  def toUnsignedByte(b: Byte): Int = b.toInt & 0xff
   var pc = 0
 
   /** Parse java bytecode into ICode */

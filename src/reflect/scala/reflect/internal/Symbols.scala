@@ -863,7 +863,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def hasMigrationAnnotation = hasAnnotation(MigrationAnnotationClass)
     def migrationMessage    = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(0) }
     def migrationVersion    = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(1) }
-    def elisionLevel        = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
     def implicitNotFoundMsg = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
 
     def isCompileTimeOnly       = hasAnnotation(CompileTimeOnlyAttr)
@@ -1471,7 +1470,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         }
         val current = phase
         try {
-          assertCorrectThread()
           phase = phaseOf(infos.validFrom)
           tp.complete(this)
         } finally {
@@ -1551,7 +1549,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           infos = infos.prev
 
         if (validTo < curPeriod) {
-          assertCorrectThread()
           // adapt any infos that come from previous runs
           val current = phase
           try {
@@ -2400,16 +2397,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  or NoSymbol if it does not exist.
      */
     def derivedValueClassUnbox: Symbol = NoSymbol
-
-     /** The case module corresponding to this case class
-     *  @pre case class is a member of some other class or package
-     */
-    final def caseModule: Symbol = {
-      var modname = name.toTermName
-      if (privateWithin.isClass && !privateWithin.isModuleClass && !hasFlag(EXPANDEDNAME))
-        modname = nme.expandedName(modname, privateWithin)
-      initialize.owner.info.decl(modname).suchThat(_.isModule)
-    }
 
     /** If this symbol is a type parameter skolem (not an existential skolem!)
      *  its corresponding type parameter, otherwise this */

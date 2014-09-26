@@ -282,10 +282,8 @@ private[internal] trait GlbLubs {
         // is because lubbing type constructors tends to result in types
         // which have been applied to dummies or Nothing.
         ts.map(_.typeParams.size).distinct match {
-          case x :: Nil if res.typeParams.size != x =>
-            logResult(s"Stripping type args from lub because $res is not consistent with $ts")(res.typeConstructor)
-          case _                                    =>
-            res
+          case x :: Nil if res.typeParams.size != x => res.typeConstructor
+          case _                                    => res
         }
       }
       finally {

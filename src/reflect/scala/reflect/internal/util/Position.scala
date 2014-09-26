@@ -9,7 +9,7 @@ package internal
 package util
 
 /** @inheritdoc */
-class Position extends scala.reflect.api.Position with InternalPositionImpl with DeprecatedPosition {
+class Position extends scala.reflect.api.Position with InternalPositionImpl {
   type Pos = Position
   def pos: Position = this
   def withPos(newPos: Position): macros.Attachments { type Pos = Position.this.Pos } = newPos
@@ -216,36 +216,4 @@ private[util] trait InternalPositionImpl {
   private def hasSource                      = source ne NoSourceFile
   private def bothRanges(that: Position)     = isRange && that.isRange
   private def bothDefined(that: Position)    = isDefined && that.isDefined
-}
-
-/** Holding cell for methods unused and/or unnecessary. */
-private[util] trait DeprecatedPosition {
-  self: Position =>
-
-  @deprecated("use `point`", "2.9.0") // Used in SBT 0.12.4
-  def offset: Option[Int] = if (isDefined) Some(point) else None
-
-  @deprecated("use `focus`", "2.11.0")
-  def toSingleLine: Position = this
-
-  @deprecated("use `line`", "2.11.0")
-  def safeLine: Int = line
-
-  @deprecated("use `showDebug`", "2.11.0")
-  def dbgString: String = showDebug
-
-  @deprecated("use `finalPosition`", "2.11.0")
-  def inUltimateSource(source: SourceFile): Position = source positionInUltimateSource this
-
-  @deprecated("use `lineCaret`", since="2.11.0")
-  def lineWithCarat(maxWidth: Int): (String, String) = ("", "")
-
-  @deprecated("Use `withSource(source)` and `withShift`", "2.11.0")
-  def withSource(source: SourceFile, shift: Int): Position = this withSource source withShift shift
-
-  @deprecated("Use `start` instead", "2.11.0")
-  def startOrPoint: Int = if (isRange) start else point
-
-  @deprecated("Use `end` instead", "2.11.0")
-  def endOrPoint: Int = if (isRange) end else point
 }

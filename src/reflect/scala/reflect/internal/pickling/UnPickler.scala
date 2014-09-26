@@ -401,9 +401,6 @@ abstract class UnPickler {
       }
     }
 
-    def noSuchTypeTag(tag: Int, end: Int): Type =
-      errorBadSignature("bad type tag: " + tag)
-
     /** Read a constant */
     protected def readConstant(): Constant = {
       val tag = readByte().toInt

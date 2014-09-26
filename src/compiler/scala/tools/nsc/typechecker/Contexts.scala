@@ -1405,9 +1405,6 @@ trait Contexts { self: Analyzer =>
       else NoSymbol
     }
 
-    def allImportedSymbols: Iterable[Symbol] =
-      importableMembers(qual.tpe) flatMap (transformImport(tree.selectors, _))
-
     private def transformImport(selectors: List[ImportSelector], sym: Symbol): List[Symbol] = selectors match {
       case List() => List()
       case List(ImportSelector(nme.WILDCARD, _, _, _)) => List(sym)

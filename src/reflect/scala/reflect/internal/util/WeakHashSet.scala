@@ -369,12 +369,6 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     def dump = table.deep
 
     /**
-     * Number of buckets that hold collisions. Useful for diagnosing performance issues.
-     */
-    def collisionBucketsCount: Int =
-      (table filter (entry => entry != null && entry.tail != null)).size
-
-    /**
      * Number of buckets that are occupied in this hash table.
      */
     def fullBucketsCount: Int =

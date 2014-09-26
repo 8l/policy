@@ -103,7 +103,6 @@ abstract class TypeFlowAnalysis {
     type P = BasicBlock
     val lattice = typeFlowLattice
 
-    val STRING = icodes.REFERENCE(StringClass)
     var method: IMethod = _
 
     /** Initialize the in/out maps for the analysis of the given method. */

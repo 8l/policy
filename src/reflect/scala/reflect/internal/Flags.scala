@@ -175,7 +175,6 @@ class Flags extends ModifierFlags {
 
   final val InitialFlags  = 0x0001FFFFFFFFFFFFL // flags that are enabled from phase 1.
   final val LateFlags     = 0x00FE000000000000L // flags that override flags in 0x1FC.
-  final val AntiFlags     = 0x7F00000000000000L // flags that cancel flags in 0x07F
   final val LateShift     = 47L
   final val AntiShift     = 56L
 
@@ -232,11 +231,6 @@ class Flags extends ModifierFlags {
   // TODO - there's no call to slap four flags onto every package.
   final val PackageFlags = TopLevelCreationFlags
 
-  // FINAL not included here due to possibility of object overriding.
-  // In fact, FINAL should not be attached regardless.  We should be able
-  // to reconstruct whether an object was marked final in source.
-  final val ModuleFlags = MODULE
-
   /** These modifiers can be set explicitly in source programs.  This is
    *  used only as the basis for the default flag mask (which ones to display
    *  when printing a normal message.)
@@ -282,7 +276,6 @@ class Flags extends ModifierFlags {
    */
   final val ValueParameterFlags = BYNAMEPARAM | IMPLICIT | DEFAULTPARAM | STABLE | SYNTHETIC
   final val BeanPropertyFlags   = DEFERRED | OVERRIDE | STATIC
-  final val VarianceFlags       = COVARIANT | CONTRAVARIANT
 
   /** These appear to be flags which should be transferred from owner symbol
    *  to a newly created constructor symbol.
@@ -340,8 +333,6 @@ class Flags extends ModifierFlags {
   private final val METHOD_PKL     = (1 << 9)
   private final val MODULE_PKL     = (1 << 10)
   private final val INTERFACE_PKL  = (1 << 11)
-
-  private final val PKL_MASK       = 0x00000FFF
 
   /** Pickler correspondence, ordered roughly by frequency of occurrence */
   private def rawPickledCorrespondence = Array[(Long, Long)](

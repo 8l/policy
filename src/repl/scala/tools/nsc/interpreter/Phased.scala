@@ -81,9 +81,6 @@ trait Phased {
     finally setMulti(saved)
   }
 
-  def atMap[T](phs: Seq[PhaseName])(body: => T): Seq[(PhaseName, T)] =
-    phs zip atMulti(phs)(body)
-
   object PhaseName {
     implicit lazy val phaseNameOrdering: Ordering[PhaseName] = Ordering[Int] on (_.id)
 

@@ -124,12 +124,10 @@ final class Mode private (val bits: Int) extends AnyVal {
   def inTappMode    = inAll(TAPPmode)
   def inTypeMode    = inAll(TYPEmode)
 
-  def typingExprByValue           = inAll(EXPRmode | BYVALmode)
   def typingExprFun               = inAll(EXPRmode | FUNmode)
   def typingExprNotFun            = in(all = EXPRmode, none = FUNmode)
   def typingExprNotFunNotLhs      = in(all = EXPRmode, none = FUNmode | LHSmode)
   def typingExprNotLhs            = in(all = EXPRmode, none = LHSmode)
-  def typingExprNotValue          = in(all = EXPRmode, none = BYVALmode)
   def typingMonoExprByValue       = in(all = EXPRmode | BYVALmode, none = POLYmode)
   def typingConstructorPattern    = inAll(PATTERNmode | FUNmode)
   def typingPatternNotConstructor = in(all = PATTERNmode, none = FUNmode)
