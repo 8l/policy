@@ -23,9 +23,7 @@ package building {
     def pathSeparator           = java.io.File.pathSeparator
     def separator               = java.io.File.separator
 
-    def SbtKnownVersion         = sysOrBuild("sbt.version") | "0.13.6"
-    def ScalaKnownVersion       = sysOrBuild("scala.version") | "2.11.2"
-    def BootstrapModuleProperty = "bootstrap.module"
+    def BootstrapModuleProperty = "policy.bootstrap"
     def PartestRunnerClass      = "scala.tools.partest.nest.ConsoleRunner"
     def ReplRunnerClass         = "scala.tools.nsc.MainGenericRunner"
     def CompilerRunnerClass     = "scala.tools.nsc.Main"
@@ -42,8 +40,8 @@ package building {
     implicit def symToLocalProject(sym: scala.Symbol): LocalProject                 = LocalProject(sym.name)
     implicit def inputTaskValueDiscarding[A](in: InputTaskOf[A]): InputTaskOf[Unit] = in map (_ => ())
 
-    def chooseBootstrap                         = sysOrBuild(BootstrapModuleProperty).fold(scalaCompiler)(Deps.moduleId)
-    def scalaArtifactId(name: String): ModuleID = ScalaOrg % dash(ScalaName, name) % ScalaKnownVersion
+    def chooseBootstrap                         = sysOrBuild(BootstrapModuleProperty).fold(scalaCompiler)(id => Deps.moduleId(if (id contains ":") id else s"org.improving:bootstrap-compiler:$id"))
+    def scalaArtifactId(name: String): ModuleID = ScalaOrg % dash(ScalaName, name) % scalaVersionLatest
     def scalaLibrary                            = scalaArtifactId("library")
     def scalaCompiler                           = scalaArtifactId("compiler")
   }

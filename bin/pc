@@ -5,17 +5,18 @@ run () { echo >&2 "% $@" && "$@"; }
 
 [[ $# -eq 0 ]] && echo "Usage: $0 [-ciru] <files>" && exit 1
 
-unset update compile repl runner
+unset update compile repl runner extraClasspath
 
+compile=true
 compilerClass="scala.tools.nsc.Main"
 replClass="scala.tools.nsc.MainGenericRunner"
 
-set -- $(gnu_getopt --option ciur: --longoptions "compile interactive update runner" -- "$@")
+set -- $(gnu_getopt --option c:iur: --longoptions "compile interactive update runner" -- "$@")
 
 for opt; do
   case "$1" in
                --) shift && eval set -- $@ && break ;;
-     -c|--compile) compile=true && shift ;;
+   -c|--classpath) extraClasspath="$(echo "$2" | tr -d "'")" && shift 2 ;;
  -i|--interactive) interactive=true && shift ;;
       -r|--runner) runner="$(echo "$2" | tr -d "'")" && shift 2 ;;
       -u|--update) sbt generateClasspath && shift ;;
@@ -26,7 +27,7 @@ done
 [[ -n $update ]] && run sbt generateClasspath
 [[ -f .classpath ]] || sbt generateClasspath
 [[ -f .classpath ]] || exit 1
-classpath="$(cat .classpath)"
+classpath="$extraClasspath:$(cat .classpath)"
 
 [[ -n $compile ]] && out="$(mktemp -dt policy)"
 [[ -n $compile ]] && run java -cp "$classpath" "$compilerClass" -usejavacp -d "$out" "$@"
