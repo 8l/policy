@@ -24,6 +24,12 @@ class Position extends scala.reflect.api.Position with InternalPositionImpl {
   def start: Int         = fail("start")
   def point: Int         = fail("point")
   def end: Int           = fail("end")
+
+  // sbt lives on forever.
+  @deprecated("use `point`", "2.9.0") // Used in SBT 0.12.4
+  def offset: Option[Int] = if (isDefined) Some(point) else None
+  @deprecated("use something else", "2.11.0")
+  def inUltimateSource(source: SourceFile): Position = source positionInUltimateSource this
 }
 
 object Position {
