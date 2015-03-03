@@ -827,11 +827,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
           info(specMember) = NormalizedMember(sym)
           newOverload(sym, specMember, env)
-          // if this is a class, we insert the normalized member in scope,
-          // if this is a method, there's no attached scope for it (EmptyScope)
-          val decls = owner.info.decls
-          if (decls != EmptyScope)
-            decls.enter(specMember)
           specMember
         }
       }
@@ -852,7 +847,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         sym.resetFlag(PRIVATE).setFlag(PROTECTED)
 
       val specMember = subst(outerEnv)(specializedOverload(owner, sym, spec))
-      owner.info.decls.enter(specMember)
       typeEnv(specMember) = typeEnv(sym) ++ outerEnv ++ spec
       wasSpecializedForTypeVars(specMember) ++= spec collect { case (s, tp) if s.tpe == tp => s }
       newOverload(sym, specMember, spec)
@@ -1200,7 +1194,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *     // even in the specialized variant, the local X class
    *     // doesn't extend Parent$mcI$sp, since its symbol has
    *     // been created after specialization and was not seen
-   *     // by specialzation's info transformer.
+   *     // by specialization's info transformer.
    *     ...
    *   }
    * }
@@ -1386,13 +1380,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val residualTargs = symbol.info.typeParams zip baseTargs collect {
           case (tvar, targ) if !env.contains(tvar) || !isPrimitiveValueClass(env(tvar).typeSymbol) => targ
         }
-        // See SI-5583.  Don't know why it happens now if it didn't before.
-        if (specMember.info.typeParams.isEmpty && residualTargs.nonEmpty)
-          baseTree
-        else {
-          val tree1 = gen.mkTypeApply(specTree, residualTargs)
-          localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
-        }
+        val tree1 = gen.mkTypeApply(specTree, residualTargs)
+        localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
       }
 
       curTree = tree

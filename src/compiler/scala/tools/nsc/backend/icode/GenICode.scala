@@ -1010,7 +1010,7 @@ abstract class GenICode extends SubComponent {
           ()
         case (_, UNIT) =>
           ctx.bb.emit(DROP(from), pos)
-        // otherwise we'd better be doing a primtive -> primitive coercion or there's a problem
+        // otherwise we'd better be doing a primitive -> primitive coercion or there's a problem
         case _ if !from.isRefOrArrayType && !to.isRefOrArrayType =>
           coerce(from, to)
         case _ =>
@@ -1360,7 +1360,7 @@ abstract class GenICode extends SubComponent {
           if (!settings.optimise) {
             if (l.tpe <:< BoxedNumberClass.tpe) {
               if (r.tpe <:< BoxedNumberClass.tpe) platform.externalEqualsNumNum
-              else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumChar
+              else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumObject // will be externalEqualsNumChar in 2.12, SI-9030
               else platform.externalEqualsNumObject
             } else platform.externalEquals
           } else {

@@ -76,7 +76,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case s : SilentTypeError      => f(s.reportableErrors)
     }
   }
-  class SilentTypeError private(val errors: List[AbsTypeError]) extends SilentResult[Nothing] {
+  class SilentTypeError private(val errors: List[AbsTypeError], val warnings: List[(Position, String)]) extends SilentResult[Nothing] {
     override def isEmpty = true
     def err: AbsTypeError = errors.head
     def reportableErrors = errors match {
@@ -87,10 +87,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
   }
   object SilentTypeError {
-    def apply(errors: AbsTypeError*): SilentTypeError = new SilentTypeError(errors.toList)
+    def apply(errors: AbsTypeError*): SilentTypeError = apply(errors.toList, Nil)
+    def apply(errors: List[AbsTypeError], warnings: List[(Position, String)]): SilentTypeError = new SilentTypeError(errors, warnings)
+    // todo: this extracts only one error, should be a separate extractor.
     def unapply(error: SilentTypeError): Option[AbsTypeError] = error.errors.headOption
   }
 
+  // todo: should include reporter warnings in SilentResultValue.
+  // e.g. tryTypedApply could print warnings on arguments when the typing succeeds.
   case class SilentResultValue[+T](value: T) extends SilentResult[T] { override def isEmpty = false }
 
   def newTyper(context: Context): Typer = new NormalTyper(context)
@@ -660,7 +664,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       @inline def wrapResult(reporter: ContextReporter, result: T) =
         if (reporter.hasErrors) {
           stopStats()
-          SilentTypeError(reporter.errors: _*)
+          SilentTypeError(reporter.errors.toList, reporter.warnings.toList)
         } else SilentResultValue(result)
 
       try {
@@ -740,6 +744,26 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case _ =>
     }
 
+    /**
+     * Convert a SAM type to the corresponding FunctionType,
+     * extrapolating BoundedWildcardTypes in the process
+     * (no type precision is lost by the extrapolation,
+     *  but this facilitates dealing with the types arising from Java's use-site variance).
+     */
+    def samToFunctionType(tp: Type, sam: Symbol = NoSymbol): Type = {
+      val samSym = sam orElse samOf(tp)
+
+      def correspondingFunctionSymbol = {
+        val numVparams = samSym.info.params.length
+        if (numVparams > definitions.MaxFunctionArity) NoSymbol
+        else FunctionClass(numVparams)
+      }
+
+      if (samSym.exists && samSym.owner != correspondingFunctionSymbol) // don't treat Functions as SAMs
+        wildcardExtrapolation(normalize(tp memberInfo samSym))
+      else NoType
+    }
+
     /** Perform the following adaptations of expression, pattern or type `tree` wrt to
      *  given mode `mode` and given prototype `pt`:
      *  (-1) For expressions with annotated types, let AnnotationCheckers decide what to do
@@ -804,6 +828,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               }
               orElse { _ =>
                 val resetTree = resetAttrs(original)
+                resetTree match {
+                  case treeInfo.Applied(fun, targs, args) =>
+                    if (fun.symbol != null && fun.symbol.isError)
+                      // SI-9041 Without this, we leak error symbols past the typer!
+                      // because the fallback typechecking notices the error-symbol,
+                      // refuses to re-attempt typechecking, and presumes that someone
+                      // else was responsible for issuing the related type error!
+                      fun.setSymbol(NoSymbol)
+                  case _ =>
+                }
+                debuglog(s"fallback on implicits: ${tree}/$resetTree")
                 val tree1 = typed(resetTree, mode)
                 // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
                 // we pass `EmptyTree` as the `original`. intended? added in 2009 (53d98e7d42) by martin.
@@ -822,7 +857,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Block(_, tree1) => tree1.symbol
           case _               => tree.symbol
         }
-        if (!meth.isConstructor && isFunctionType(pt)) { // (4.2)
+        if (!meth.isConstructor && (isFunctionType(pt) || samOf(pt).exists)) { // (4.2)
           checkParamsConvertible(tree, tree.tpe)
           val tree0 = etaExpand(context.unit, tree, this)
 
@@ -847,13 +882,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def adaptType(): Tree = {
         // @M When not typing a type constructor (!context.inTypeConstructorAllowed)
-        // or raw type (tree.symbol.isJavaDefined && context.unit.isJava), types must be of kind *,
+        // or raw type, types must be of kind *,
         // and thus parameterized types must be applied to their type arguments
         // @M TODO: why do kind-* tree's have symbols, while higher-kinded ones don't?
         def properTypeRequired = (
              tree.hasSymbolField
           && !context.inTypeConstructorAllowed
-          && !(tree.symbol.isJavaDefined && context.unit.isJava)
+          && !context.unit.isJava
         )
         // @M: don't check tree.tpe.symbol.typeParams. check tree.tpe.typeParams!!!
         // (e.g., m[Int] --> tree.tpe.symbol.typeParams.length == 1, tree.tpe.typeParams.length == 0!)
@@ -923,7 +958,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
       // We have lift crashing in 2.9 with an adapt failure in the pattern matcher.
-      // Here's my hypothsis why this happens. The pattern matcher defines a variable of type
+      // Here's my hypothesis why this happens. The pattern matcher defines a variable of type
       //
       //   val x: T = expr
       //
@@ -1085,7 +1120,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           adaptConstant(value)
         case OverloadedType(pre, alts) if !mode.inFunMode => // (1)
           inferExprAlternative(tree, pt)
-          adapt(tree, mode, pt, original)
+          adaptAfterOverloadResolution(tree, mode, pt, original)
         case NullaryMethodType(restpe) => // (2)
           adapt(tree setType restpe, mode, pt, original)
         case TypeRef(_, ByNameParamClass, arg :: Nil) if mode.inExprMode => // (2)
@@ -1118,6 +1153,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
+    // This just exists to help keep track of the spots where we have to adapt a tree after
+    // overload resolution. These proved hard to find during the fix for SI-8267.
+    def adaptAfterOverloadResolution(tree: Tree, mode: Mode, pt: Type = WildcardType, original: Tree = EmptyTree): Tree = {
+      adapt(tree, mode, pt, original)
+    }
+
     def instantiate(tree: Tree, mode: Mode, pt: Type): Tree = {
       inferExprInstance(tree, context.extractUndetparams(), pt)
       adapt(tree, mode, pt)
@@ -1136,7 +1177,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     def instantiatePossiblyExpectingUnit(tree: Tree, mode: Mode, pt: Type): Tree = {
-      if (mode.typingExprNotFun && pt.typeSymbol == UnitClass)
+      if (mode.typingExprNotFun && pt.typeSymbol == UnitClass && !tree.tpe.isInstanceOf[MethodType])
         instantiateExpectingUnit(tree, mode)
       else
         instantiate(tree, mode, pt)
@@ -1494,7 +1535,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val cbody1 = treeCopy.Block(cbody, preSuperStats, superCall1)
           val clazz = context.owner
             assert(clazz != NoSymbol, templ)
-          val cscope = context.outer.makeNewScope(ctor, context.outer.owner)
+          // SI-9086 The position of this symbol is material: implicit search will avoid triggering
+          //         cyclic errors in an implicit search in argument to the super constructor call on
+          //         account of the "ignore symbols without complete info that succeed the implicit search"
+          //         in this source file. See `ImplicitSearch#isValid` and `ImplicitInfo#isCyclicOrErroneous`.
+          val dummy = context.outer.owner.newLocalDummy(context.owner.pos)
+          val cscope = context.outer.makeNewScope(ctor, dummy)
+          if (dummy.isTopLevel) currentRun.symSource(dummy) = currentUnit.source.file
           val cbody2 = { // called both during completion AND typing.
             val typer1 = newTyper(cscope)
             // XXX: see about using the class's symbol....
@@ -1627,7 +1674,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           val sameSourceFile = context.unit.source.file == psym.sourceFile
 
-          if (!isPastTyper && psym.hasDeprecatedInheritanceAnnotation && !sameSourceFile) {
+          if (!isPastTyper && psym.hasDeprecatedInheritanceAnnotation &&
+            !sameSourceFile && !context.owner.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation)) {
             val suffix = psym.deprecatedInheritanceMessage map (": " + _) getOrElse ""
             val msg = s"inheritance from ${psym.fullLocationString} is deprecated$suffix"
             context.deprecationWarning(parent.pos, psym, msg)
@@ -1696,7 +1744,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         checkEphemeral(clazz, impl2.body)
 
       if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass) && !clazz.owner.isPackageClass)
-          context.error(clazz.pos, "inner classes cannot be classfile annotations")
+        context.error(clazz.pos, "inner classes cannot be classfile annotations")
 
       warnTypeParameterShadow(tparams1, clazz)
 
@@ -2632,7 +2680,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  `{
      *    def apply$body(p1: T1, ..., pN: TN): T = body
      *    new S {
-     *     def apply(p1: T1, ..., pN: TN): T = apply$body(p1,..., pN)
+     *     def apply(p1: T1', ..., pN: TN'): T' = apply$body(p1,..., pN)
      *    }
      *  }`
      *
@@ -2642,6 +2690,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *
      * The `apply` method is identified by the argument `sam`; `S` corresponds to the argument `samClassTp`,
      * and `resPt` is derived from `samClassTp` -- it may be fully defined, or not...
+     * If it is not fully defined, we derive `samClassTpFullyDefined` by inferring any unknown type parameters.
+     *
+     * The types T1' ... TN' and T' are derived from the method signature of the sam method,
+     * as seen from the fully defined `samClassTpFullyDefined`.
      *
      * The function's body is put in a method outside of the class definition to enforce scoping.
      * S's members should not be in scope in `body`.
@@ -2653,6 +2705,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      * However T must be fully defined before we type the instantiation, as it'll end up as a parent type,
      * which must be fully defined. Would be nice to have some kind of mechanism to insert type vars in a block of code,
      * and have the instantiation of the first occurrence propagate to the rest of the block.
+     *
+     * TODO: by-name params
+     *  scala> trait LazySink { def accept(a: => Any): Unit }
+     *  defined trait LazySink
+     *
+     *  scala> val f: LazySink = (a) => (a, a)
+     *  f: LazySink = $anonfun$1@1fb26910
+     *
+     *  scala> f(println("!"))
+     *  <console>:10: error: LazySink does not take parameters
+     *                f(println("!"))
+     *                 ^
+     *
+     *  scala> f.accept(println("!"))
+     *  !
+     *  !
      */
     def synthesizeSAMFunction(sam: Symbol, fun: Function, resPt: Type, samClassTp: Type, mode: Mode): Tree = {
       // assert(fun.vparams forall (vp => isFullyDefined(vp.tpt.tpe))) -- by construction, as we take them from sam's info
@@ -2730,14 +2798,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             samClassTp
         }
 
-      // `final override def ${sam.name}($p1: $T1, ..., $pN: $TN): $resPt = ${sam.name}\$body'($p1, ..., $pN)`
+      // what's the signature of the method that we should actually be overriding?
+      val samMethTp = samClassTpFullyDefined memberInfo sam
+      // Before the mutation, `tp <:< vpar.tpt.tpe` should hold.
+      // TODO: error message when this is not the case, as the expansion won't type check
+      //  - Ti' <:< Ti and T <: T' must hold for the samDef body to type check
+      val funArgTps = foreach2(samMethTp.paramTypes, fun.vparams)((tp, vpar) => vpar.tpt setType tp)
+
+      // `final override def ${sam.name}($p1: $T1', ..., $pN: $TN'): ${samMethTp.finalResultType} = ${sam.name}\$body'($p1, ..., $pN)`
       val samDef =
         DefDef(Modifiers(FINAL | OVERRIDE | SYNTHETIC),
           sam.name.toTermName,
           Nil,
           List(fun.vparams),
-          TypeTree(samBodyDef.tpt.tpe) setPos sampos.focus,
-          Apply(Ident(bodyName), fun.vparams map (p => Ident(p.name)))
+          TypeTree(samMethTp.finalResultType) setPos sampos.focus,
+          Apply(Ident(bodyName), fun.vparams map gen.paramToArg)
         )
 
       val serializableParentAddendum =
@@ -2767,6 +2842,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           )
         }
 
+      // TODO: improve error reporting -- when we're in silent mode (from `silent(_.doTypedApply(tree, fun, args, mode, pt)) orElse onError`)
+      // the errors in the function don't get out...
+      if (block exists (_.isErroneous))
+        context.error(fun.pos, s"Could not derive subclass of $samClassTp\n (with SAM `def $sam$samMethTp`)\n based on: $fun.")
+
       classDef.symbol addAnnotation SerialVersionUIDAnnotation
       block
     }
@@ -2787,7 +2867,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * as `(a => a): Int => Int` should not (yet) get the sam treatment.
        */
       val sam =
-        if (!settings.Xexperimental || pt.typeSymbol == FunctionSymbol) NoSymbol
+        if (pt.typeSymbol == FunctionSymbol) NoSymbol
         else samOf(pt)
 
       /* The SAM case comes first so that this works:
@@ -2797,15 +2877,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * Note that the arity of the sam must correspond to the arity of the function.
        */
       val samViable = sam.exists && sameLength(sam.info.params, fun.vparams)
+      val ptNorm = if (samViable) samToFunctionType(pt, sam) else pt
       val (argpts, respt) =
-        if (samViable) {
-          val samInfo = pt memberInfo sam
-          (samInfo.paramTypes, samInfo.resultType)
-        } else {
-          pt baseType FunctionSymbol match {
-            case TypeRef(_, FunctionSymbol, args :+ res) => (args, res)
-            case _                                       => (fun.vparams map (_ => if (pt == ErrorType) ErrorType else NoType), WildcardType)
-          }
+        ptNorm baseType FunctionSymbol match {
+          case TypeRef(_, FunctionSymbol, args :+ res) => (args, res)
+          case _                                       => (fun.vparams map (_ => if (pt == ErrorType) ErrorType else NoType), WildcardType)
         }
 
       if (!FunctionSymbol.exists)
@@ -3128,7 +3204,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (sym1 != NoSymbol) sym = sym1
           }
           if (sym == NoSymbol) fun
-          else adapt(fun setSymbol sym setType pre.memberType(sym), mode.forFunMode, WildcardType)
+          else adaptAfterOverloadResolution(fun setSymbol sym setType pre.memberType(sym), mode.forFunMode)
         } else fun
       }
 
@@ -3173,10 +3249,26 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               setError(tree)
             else {
               inferMethodAlternative(fun, undetparams, argTpes, pt)
-              doTypedApply(tree, adapt(fun, mode.forFunMode, WildcardType), args1, mode, pt)
+              doTypedApply(tree, adaptAfterOverloadResolution(fun, mode.forFunMode, WildcardType), args1, mode, pt)
             }
           }
           handleOverloaded
+
+        case _ if isPolymorphicSignature(fun.symbol) =>
+          // Mimic's Java's treatment of polymorphic signatures as described in
+          // https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.3
+          //
+          // One can think of these methods as being infinitely overloaded. We create
+          // a ficticious new cloned method symbol for each call site that takes on a signature
+          // governed by a) the argument types and b) the expected type
+          val args1 = typedArgs(args, forArgMode(fun, mode))
+          val pts = args1.map(_.tpe.deconst)
+          val clone = fun.symbol.cloneSymbol
+          val cloneParams = pts map (pt => clone.newValueParameter(currentUnit.freshTermName()).setInfo(pt))
+          val resultType = if (isFullyDefined(pt)) pt else ObjectTpe
+          clone.modifyInfo(mt => copyMethodType(mt, cloneParams, resultType))
+          val fun1 = fun.setSymbol(clone).setType(clone.info)
+          doTypedApply(tree, fun1, args1, mode, resultType).setType(resultType)
 
         case mt @ MethodType(params, _) =>
           val paramTypes = mt.paramTypes
@@ -3672,8 +3764,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case TypeRef(pre, sym, args) =>
             if (sym.isAliasType && containsLocal(tp) && (tp.dealias ne tp)) apply(tp.dealias)
             else {
-              if (pre.isVolatile)
-                InferTypeWithVolatileTypeSelectionError(tree, pre)
+              if (pre.isVolatile) pre match {
+                case SingleType(_, sym) if sym.isSynthetic && isPastTyper =>
+                  debuglog(s"ignoring volatility of prefix in pattern matcher generated inferred type: $tp") // See pos/t7459c.scala
+                case _ =>
+                  InferTypeWithVolatileTypeSelectionError(tree, pre)
+              }
               mapOver(tp)
             }
           case _ =>
@@ -3752,7 +3848,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     protected def typedTypeApply(tree: Tree, mode: Mode, fun: Tree, args: List[Tree]): Tree = fun.tpe match {
       case OverloadedType(pre, alts) =>
         inferPolyAlternatives(fun, mapList(args)(treeTpe))
-        val tparams = fun.symbol.typeParams //@M TODO: fun.symbol.info.typeParams ? (as in typedAppliedTypeTree)
+
+        // SI-8267 `memberType` can introduce existentials *around* a PolyType/MethodType, see AsSeenFromMap#captureThis.
+        //         If we had selected a non-overloaded symbol, `memberType` would have been called in `makeAccessible`
+        //         and the resulting existential type would have been skolemized in `adapt` *before* we typechecked
+        //         the enclosing type-/ value- application.
+        //
+        //         However, if the selection is overloaded, we defer calling `memberType` until we can select a single
+        //         alternative here. It is therefore necessary to skolemize the existential here.
+        //
+        val fun1 = adaptAfterOverloadResolution(fun, mode.forFunMode | TAPPmode)
+
+        val tparams = fun1.symbol.typeParams //@M TODO: fun.symbol.info.typeParams ? (as in typedAppliedTypeTree)
         val args1 = if (sameLength(args, tparams)) {
           //@M: in case TypeApply we can't check the kind-arities of the type arguments,
           // as we don't know which alternative to choose... here we do
@@ -3766,7 +3873,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
          // ...actually this was looping anyway, see bug #278.
           return TypedApplyWrongNumberOfTpeParametersError(fun, fun)
 
-        typedTypeApply(tree, mode, fun, args1)
+        typedTypeApply(tree, mode, fun1, args1)
       case SingleType(_, _) =>
         typedTypeApply(tree, mode, fun setType fun.tpe.widen, args)
       case PolyType(tparams, restpe) if tparams.nonEmpty =>
@@ -4292,7 +4399,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
         val start = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
 
-        def onError(typeErrors: Seq[AbsTypeError]): Tree = {
+        def onError(typeErrors: Seq[AbsTypeError], warnings: Seq[(Position, String)]): Tree = {
           if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, start)
 
           // If the problem is with raw types, copnvert to existentials and try again.
@@ -4340,10 +4447,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           }
           typeErrors foreach context.issue
+          warnings foreach { case (p, m) => context.warning(p, m) }
           setError(treeCopy.Apply(tree, fun, args))
         }
 
-        silent(_.doTypedApply(tree, fun, args, mode, pt)) orElse onError
+        silent(_.doTypedApply(tree, fun, args, mode, pt)) match {
+          case SilentResultValue(value) => value
+          case e: SilentTypeError => onError(e.errors, e.warnings)
+        }
       }
 
       def normalTypedApply(tree: Tree, fun: Tree, args: List[Tree]) = {
@@ -4394,6 +4505,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case err: SilentTypeError =>
             onError({
               err.reportableErrors foreach context.issue
+              err.warnings foreach { case (p, m) => context.warning(p, m) }
               args foreach (arg => typed(arg, mode, ErrorType))
               setError(tree)
             })
@@ -5052,16 +5164,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             typed(tree.ref, MonoQualifierModes | mode.onlyTypePat, AnyRefTpe)
           }
 
-        if (!refTyped.isErrorTyped)
+        if (refTyped.isErrorTyped) {
+          setError(tree)
+        } else {
           tree setType refTyped.tpe.resultType
-
-        if (treeInfo.admitsTypeSelection(refTyped)) tree
-        else UnstableTreeError(refTyped)
+          if (refTyped.isErrorTyped || treeInfo.admitsTypeSelection(refTyped)) tree
+          else UnstableTreeError(tree)
+        }
       }
 
       def typedSelectFromTypeTree(tree: SelectFromTypeTree) = {
         val qual1 = typedType(tree.qualifier, mode)
-        if (qual1.tpe.isVolatile) TypeSelectionFromVolatileTypeError(tree, qual1)
+        if (qual1.isErrorTyped) setError(treeCopy.SelectFromTypeTree(tree, qual1, tree.name))
+        else if (qual1.tpe.isVolatile) TypeSelectionFromVolatileTypeError(tree, qual1)
         else typedSelect(tree, qual1, tree.name)
       }
 
@@ -5073,7 +5188,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedExistentialTypeTree(tree: ExistentialTypeTree) = {
         val tree1 = typerWithLocalContext(context.makeNewScope(tree, context.owner)){
-          _.typedExistentialTypeTree(tree, mode)
+          typer =>
+            if (context.inTypeConstructorAllowed)
+              typer.context.withinTypeConstructorAllowed(typer.typedExistentialTypeTree(tree, mode))
+            else
+              typer.typedExistentialTypeTree(tree, mode)
         }
         checkExistentialsFeature(tree1.pos, tree1.tpe, "the existential type")
         tree1

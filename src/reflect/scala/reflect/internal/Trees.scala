@@ -8,8 +8,8 @@ package reflect
 package internal
 
 import Flags._
-import pickling.PickleFormat._
 import scala.collection.{ mutable, immutable }
+import scala.reflect.macros.Attachments
 import util.Statistics
 
 trait Trees extends api.Trees {
@@ -1074,6 +1074,13 @@ trait Trees extends api.Trees {
     override def pos_=(pos: Position)  = setPos(pos)
     override def setType(t: Type)      = this
     override def tpe_=(t: Type)        = setType(t)
+
+    // We silently ignore attempts to add attachments to `EmptyTree`. See SI-8947 for an
+    // example of a bug in macro expansion that this solves.
+    override def setAttachments(attachments: Attachments {type Pos = Position}): this.type = attachmentWarning()
+    override def updateAttachment[T: ClassTag](attachment: T): this.type = attachmentWarning()
+    override def removeAttachment[T: ClassTag]: this.type = attachmentWarning()
+    private def attachmentWarning(): this.type = {devWarning(s"Attempt to mutate attachments on $self ignored"); this}
   }
 
   case object EmptyTree extends TermTree with CannotHaveAttrs { override def isEmpty = true; val asList = List(this) }
@@ -1549,6 +1556,7 @@ trait Trees extends api.Trees {
    */
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Transformer {
     val symSubst = new SubstSymMap(from, to)
+    private var mutatedSymbols: List[Symbol] = Nil
     override def transform(tree: Tree): Tree = {
       def subst(from: List[Symbol], to: List[Symbol]) {
         if (!from.isEmpty)
@@ -1563,6 +1571,7 @@ trait Trees extends api.Trees {
           case _: DefTree =>
             val newInfo = symSubst(tree.symbol.info)
             if (!(newInfo =:= tree.symbol.info)) {
+              mutatedSymbols ::= tree.symbol
               tree.symbol updateInfo newInfo
             }
           case _          =>
@@ -1582,7 +1591,23 @@ trait Trees extends api.Trees {
       } else
         super.transform(tree)
     }
-    def apply[T <: Tree](tree: T): T = transform(tree).asInstanceOf[T]
+    def apply[T <: Tree](tree: T): T = {
+      val tree1 = transform(tree)
+      invalidateSingleTypeCaches(tree1)
+      tree1.asInstanceOf[T]
+    }
+    private def invalidateSingleTypeCaches(tree: Tree): Unit = {
+      if (mutatedSymbols.nonEmpty)
+        for (t <- tree if t.tpe != null)
+          for (tp <- t.tpe) {
+            tp match {
+              case s: SingleType if mutatedSymbols contains s.sym =>
+                s.underlyingPeriod = NoPeriod
+                s.underlyingCache = NoType
+              case _ =>
+            }
+          }
+    }
     override def toString() = "TreeSymSubstituter/" + substituterString("Symbol", "Symbol", from, to)
   }
 

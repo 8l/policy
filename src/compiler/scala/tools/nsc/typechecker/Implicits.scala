@@ -3,7 +3,7 @@
  * @author  Martin Odersky
  */
 
-//todo: rewrite or disllow new T where T is a mixin (currently: <init> not a member of T)
+//todo: rewrite or disallow new T where T is a mixin (currently: <init> not a member of T)
 //todo: use inherited type info also for vars and values
 //todo: disallow C#D in superclass
 //todo: treat :::= correctly
@@ -137,7 +137,7 @@ trait Implicits {
    *  @param  tree    The tree representing the implicit
    *  @param  subst   A substituter that represents the undetermined type parameters
    *                  that were instantiated by the winning implicit.
-   *  @param undetparams undeterminted type parameters
+   *  @param undetparams undetermined type parameters
    */
   class SearchResult(val tree: Tree, val subst: TreeTypeSubstituter, val undetparams: List[Symbol]) {
     override def toString = "SearchResult(%s, %s)".format(tree,
@@ -586,7 +586,7 @@ trait Implicits {
         val itree2 = if (!isView) fallback else pt match {
           case Function1(arg1, arg2) =>
             typed1(
-              atPos(itree0.pos)(Apply(itree1, List(Ident("<argument>") setType approximate(arg1)))),
+              atPos(itree0.pos)(Apply(itree1, List(Ident(nme.argument) setType approximate(arg1)))),
               EXPRmode,
               approximate(arg2)
             ) match {
@@ -893,7 +893,7 @@ trait Implicits {
 
       /** Returns all eligible ImplicitInfos and their SearchResults in a map.
        */
-      def findAll() = mapFrom(eligible)(typedImplicit(_, ptChecked = false, isLocalToCallsite))
+      def findAll() = linkedMapFrom(eligible)(typedImplicit(_, ptChecked = false, isLocalToCallsite))
 
       /** Returns the SearchResult of the best match.
        */
@@ -938,7 +938,7 @@ trait Implicits {
      *                           symbols of the same name in succeeding lists.
      *  @return                  map from infos to search results
      */
-    def applicableInfos(iss: Infoss, isLocalToCallsite: Boolean): Map[ImplicitInfo, SearchResult] = {
+    def applicableInfos(iss: Infoss, isLocalToCallsite: Boolean): mutable.LinkedHashMap[ImplicitInfo, SearchResult] = {
       val start       = if (Statistics.canEnable) Statistics.startCounter(subtypeAppInfos) else null
       val computation = new ImplicitComputation(iss, isLocalToCallsite) { }
       val applicable  = computation.findAll()
@@ -1446,8 +1446,10 @@ trait Implicits {
         })
 
       private lazy val typeParamNames: List[String] = sym.typeParams.map(_.decodedName)
+      private def typeArgsAtSym(paramTp: Type) = paramTp.baseType(sym).typeArgs
 
-      def format(paramName: Name, paramTp: Type): String = format(paramTp.typeArgs map (_.toString))
+      def format(paramName: Name, paramTp: Type): String = format(typeArgsAtSym(paramTp) map (_.toString))
+
       def format(typeArgs: List[String]): String =
         interpolate(msg, Map((typeParamNames zip typeArgs): _*)) // TODO: give access to the name and type of the implicit argument, etc?
 

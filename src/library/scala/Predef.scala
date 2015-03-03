@@ -210,7 +210,7 @@ import scala.io.StdIn
   }
 
   /** `???` can be used for marking methods that remain to be implemented.
-   *  @throws  A `NotImplementedError`
+   *  @throws NotImplementedError
    */
   def ??? : Nothing = throw new NotImplementedError
 

@@ -20,7 +20,7 @@ import scala.annotation.tailrec
  *
  * Documentation at http://lamp.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/2012Q2/GenASM.pdf
  */
-abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM { self =>
+abstract class GenASM extends SubComponent with BytecodeWriters { self =>
   import global._
   import icodes._
   import icodes.opcodes._
@@ -99,16 +99,76 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       }
     }
 
+    private def isJavaEntryPoint(icls: IClass) = {
+      val sym = icls.symbol
+      def fail(msg: String, pos: Position = sym.pos) = {
+        reporter.warning(sym.pos,
+          "" + sym.name + " has a main method with parameter type Array[String], but " + sym.fullName('.') + " will not be a runnable program.\n" +
+            "  Reason: " + msg
+          // TODO: make this next claim true, if possible
+          //   by generating valid main methods as static in module classes
+          //   not sure what the jvm allows here
+          // + "  You can still run the program by calling it as " + sym.javaSimpleName + " instead."
+        )
+        false
+      }
+      def failNoForwarder(msg: String) = {
+        fail(msg + ", which means no static forwarder can be generated.\n")
+      }
+      val possibles = if (sym.hasModuleFlag) (sym.tpe nonPrivateMember nme.main).alternatives else Nil
+      val hasApproximate = possibles exists { m =>
+        m.info match {
+          case MethodType(p :: Nil, _) => p.tpe.typeSymbol == ArrayClass
+          case _                       => false
+        }
+      }
+      // At this point it's a module with a main-looking method, so either succeed or warn that it isn't.
+      hasApproximate && {
+        // Before erasure so we can identify generic mains.
+        enteringErasure {
+          val companion     = sym.linkedClassOfClass
+
+          if (hasJavaMainMethod(companion))
+            failNoForwarder("companion contains its own main method")
+          else if (companion.tpe.member(nme.main) != NoSymbol)
+            // this is only because forwarders aren't smart enough yet
+            failNoForwarder("companion contains its own main method (implementation restriction: no main is allowed, regardless of signature)")
+          else if (companion.isTrait)
+            failNoForwarder("companion is a trait")
+          // Now either succeeed, or issue some additional warnings for things which look like
+          // attempts to be java main methods.
+          else (possibles exists isJavaMainMethod) || {
+            possibles exists { m =>
+              m.info match {
+                case PolyType(_, _) =>
+                  fail("main methods cannot be generic.")
+                case MethodType(params, res) =>
+                  if (res.typeSymbol :: params exists (_.isAbstractType))
+                    fail("main methods cannot refer to type parameters or abstract types.", m.pos)
+                  else
+                    isJavaMainMethod(m) || fail("main method must have exact signature (Array[String])Unit", m.pos)
+                case tp =>
+                  fail("don't know what this is: " + tp, m.pos)
+              }
+            }
+          }
+        }
+      }
+    }
+
     override def run() {
 
       if (settings.debug)
         inform("[running phase " + name + " on icode]")
 
-      if (settings.Xdce)
-        for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym)) {
+      if (settings.Xdce) {
+        val classes = icodes.classes.keys.toList // copy to avoid mutating the map while iterating
+        for (sym <- classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym)) {
+          log(s"Optimizer eliminated ${sym.fullNameString}")
           deadCode.elidedClosures += sym
           icodes.classes -= sym
         }
+      }
 
       // For predictably ordered error messages.
       var sortedClasses = classes.values.toList sortBy (_.symbol.fullName)
@@ -532,7 +592,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           val x = innerClassSymbolFor(s)
           if(x ne NoSymbol) {
             assert(x.isClass, "not an inner-class symbol")
-            val isInner = !x.rawowner.isPackageClass
+            // impl classes are considered top-level, see comment in BTypes
+            val isInner = !considerAsTopLevelImplementationArtifact(s) && !x.rawowner.isPackageClass
             if (isInner) {
               innerClassBuffer += x
               collectInnerClass(x.rawowner)
@@ -614,7 +675,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
     def isDeprecated(sym: Symbol): Boolean = { sym.annotations exists (_ matches definitions.DeprecatedAttr) }
 
-    def addInnerClasses(csym: Symbol, jclass: asm.ClassVisitor) {
+    def addInnerClasses(csym: Symbol, jclass: asm.ClassVisitor, isMirror: Boolean = false) {
       /* The outer name for this inner class. Note that it returns null
        * when the inner class should not get an index in the constant pool.
        * That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
@@ -629,22 +690,55 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         }
       }
 
-      def innerName(innerSym: Symbol): String =
-        if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
-          null
-        else
-          "" + innerSym.rawname + innerSym.moduleSuffix
+      def innerName(innerSym: Symbol): String = {
+        // phase travel necessary: after flatten, the name includes the name of outer classes.
+        // if some outer name contains $anon, a non-anon class is considered anon.
+        if (exitingPickler(innerSym.isAnonymousClass || innerSym.isAnonymousFunction)) null
+        else "" + innerSym.rawname + innerSym.moduleSuffix
+      }
 
-      // This collects all inner classes of csym, including local and anonymous: lambdalift makes
-      // them members of their enclosing class.
-      innerClassBuffer ++= exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(csym))
-
-      // Add members of the companion object (if top-level). why, see comment in BTypes.scala.
       val linkedClass = exitingPickler(csym.linkedClassOfClass) // linkedCoC does not work properly in late phases
-      if (isTopLevelModule(linkedClass)) {
-        // phase travel to exitingPickler: this makes sure that memberClassesOf only sees member classes,
-        // not local classes that were lifted by lambdalift.
-        innerClassBuffer ++= exitingPickler(memberClassesOf(linkedClass))
+
+      innerClassBuffer ++= {
+        val members = exitingPickler(memberClassesForInnerClassTable(csym))
+        // lambdalift makes all classes (also local, anonymous) members of their enclosing class
+        val allNested = exitingPhase(currentRun.lambdaliftPhase)(memberClassesForInnerClassTable(csym))
+        val nested = {
+          // Classes nested in value classes are nested in the companion at this point. For InnerClass /
+          // EnclosingMethod, we use the value class as the outer class. So we remove nested classes
+          // from the companion that were originally nested in the value class.
+          if (exitingPickler(linkedClass.isDerivedValueClass)) allNested.filterNot(classOriginallyNestedInClass(_, linkedClass))
+          else allNested
+        }
+
+        // for the mirror class, we take the members of the companion module class (Java compat, see doc in BTypes.scala).
+        // for module classes, we filter out those members.
+        if (isMirror) members
+        else if (isTopLevelModule(csym)) nested diff members
+        else nested
+      }
+
+      if (!considerAsTopLevelImplementationArtifact(csym)) {
+        // If this is a top-level non-impl class, add members of the companion object. These are the
+        // classes for which we change the InnerClass entry to allow using them from Java.
+        // We exclude impl classes: if the classfile for the impl class exists on the classpath, a
+        // linkedClass symbol is found for which isTopLevelModule is true, so we end up searching
+        // members of that weird impl-class-module-class-symbol. that search probably cannot return
+        // any classes, but it's better to exclude it.
+        if (linkedClass != NoSymbol && isTopLevelModule(linkedClass)) {
+          // phase travel to exitingPickler: this makes sure that memberClassesForInnerClassTable only
+          // sees member classes, not local classes that were lifted by lambdalift.
+          innerClassBuffer ++= exitingPickler(memberClassesForInnerClassTable(linkedClass))
+        }
+
+        // Classes nested in value classes are nested in the companion at this point. For InnerClass /
+        // EnclosingMethod we use the value class as enclosing class. Here we search nested classes
+        // in the companion that were originally nested in the value class, and we add them as nested
+        // in the value class.
+        if (linkedClass != NoSymbol && exitingPickler(csym.isDerivedValueClass)) {
+          val moduleMemberClasses = exitingPhase(currentRun.lambdaliftPhase)(memberClassesForInnerClassTable(linkedClass))
+          innerClassBuffer ++= moduleMemberClasses.filter(classOriginallyNestedInClass(_, csym))
+        }
       }
 
       val allInners: List[Symbol] = innerClassBuffer.toList filterNot deadCode.elidedClosures
@@ -793,15 +887,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       for (ThrownException(exc) <- excs.distinct)
       yield javaName(exc)
 
-    /** Whether an annotation should be emitted as a Java annotation
-     *   .initialize: if 'annot' is read from pickle, atp might be un-initialized
-     */
-    private def shouldEmitAnnotation(annot: AnnotationInfo) =
-      annot.symbol.initialize.isJavaDefined &&
-      annot.matches(ClassfileAnnotationClass) &&
-      annot.args.isEmpty &&
-      !annot.matches(DeprecatedAttr)
-
     def getCurrentCUnit(): CompilationUnit
 
     def getGenericSignature(sym: Symbol, owner: Symbol) = self.getGenericSignature(sym, owner, getCurrentCUnit())
@@ -863,7 +948,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = cw.visitAnnotation(descriptor(typ), true)
+        val av = cw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -872,7 +957,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = mw.visitAnnotation(descriptor(typ), true)
+        val av = mw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -881,7 +966,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = fw.visitAnnotation(descriptor(typ), true)
+        val av = fw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -893,7 +978,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
            annot <- annots) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val pannVisitor: asm.AnnotationVisitor = jmethod.visitParameterAnnotation(idx, descriptor(typ), true)
+        val pannVisitor: asm.AnnotationVisitor = jmethod.visitParameterAnnotation(idx, descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(pannVisitor, assocs)
       }
     }
@@ -1134,40 +1219,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
     def serialVUID: Option[Long] = genBCode.serialVUID(clasz.symbol)
 
-    private def getSuperInterfaces(c: IClass): Array[String] = {
-
-        // Additional interface parents based on annotations and other cues
-        def newParentForAttr(ann: AnnotationInfo): Symbol = ann.symbol match {
-          case RemoteAttr       => RemoteInterfaceClass
-          case _                => NoSymbol
-        }
-
-        /* Drop redundant interfaces (ones which are implemented by some other parent) from the immediate parents.
-         * This is important on Android because there is otherwise an interface explosion.
-         */
-        def minimizeInterfaces(lstIfaces: List[Symbol]): List[Symbol] = {
-          var rest   = lstIfaces
-          var leaves = List.empty[Symbol]
-          while(!rest.isEmpty) {
-            val candidate = rest.head
-            val nonLeaf = leaves exists { lsym => lsym isSubClass candidate }
-            if(!nonLeaf) {
-              leaves = candidate :: (leaves filterNot { lsym => candidate isSubClass lsym })
-            }
-            rest = rest.tail
-          }
-
-          leaves
-        }
-
-      val ps = c.symbol.info.parents
-      val superInterfaces0: List[Symbol] = if(ps.isEmpty) Nil else c.symbol.mixinClasses
-      val superInterfaces = existingSymbols(superInterfaces0 ++ c.symbol.annotations.map(newParentForAttr)).distinct
-
-      if(superInterfaces.isEmpty) EMPTY_STRING_ARRAY
-      else mkArray(minimizeInterfaces(superInterfaces) map javaName)
-    }
-
     var clasz:    IClass = _           // this var must be assigned only by genClass()
     var jclass:   asm.ClassWriter = _  // the classfile being emitted
     var thisName: String = _           // the internal name of jclass
@@ -1188,7 +1239,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       val ps = c.symbol.info.parents
       val superClass: String = if(ps.isEmpty) JAVA_LANG_OBJECT.getInternalName else javaName(ps.head.typeSymbol)
 
-      val ifaces = getSuperInterfaces(c)
+      val ifaces: Array[String] = implementedInterfaces(c.symbol).map(javaName)(collection.breakOut)
 
       val thisSignature = getGenericSignature(c.symbol, c.symbol.owner)
       val flags = mkFlags(
@@ -2707,7 +2758,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       addForwarders(isRemote(modsym), mirrorClass, mirrorName, modsym)
 
-      addInnerClasses(modsym, mirrorClass)
+      addInnerClasses(modsym, mirrorClass, isMirror = true)
       mirrorClass.visitEnd()
       writeIfNotTooBig("" + modsym.name, mirrorName, mirrorClass, modsym)
     }
@@ -2842,7 +2893,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
   } // end of class JBeanInfoBuilder
 
   /** A namespace for utilities to normalize the code of an IMethod, over and beyond what IMethod.normalize() strives for.
-   * In particualr, IMethod.normalize() doesn't collapseJumpChains().
+   * In particular, IMethod.normalize() doesn't collapseJumpChains().
    *
    * TODO Eventually, these utilities should be moved to IMethod and reused from normalize() (there's nothing JVM-specific about them).
    */
@@ -3038,7 +3089,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         }
       }
 
-      // remove the unusued exception handler references
+      // remove the unused exception handler references
       m.exh = m.exh filterNot unusedExceptionHandlers
 
       // everything not in the reachable set is unreachable, unused, and unloved. buh bye

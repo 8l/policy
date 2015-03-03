@@ -225,7 +225,7 @@ self =>
    * }}}
    *
    *  @return The first element of the `Stream`.
-   *  @throws Predef.NoSuchElementException if the stream is empty.
+   *  @throws java.util.NoSuchElementException if the stream is empty.
    */
   def head: A
 
@@ -236,7 +236,7 @@ self =>
    *  returns the lazy result.
    *
    *  @return The tail of the `Stream`.
-   *  @throws Predef.UnsupportedOperationException if the stream is empty.
+   *  @throws UnsupportedOperationException if the stream is empty.
    */
   def tail: Stream[A]
 
@@ -499,16 +499,6 @@ self =>
     )
     else super.flatMap(f)(bf)
 
-  override private[scala] def filterImpl(p: A => Boolean, isFlipped: Boolean): Stream[A] = {
-    // optimization: drop leading prefix of elems for which f returns false
-    // var rest = this dropWhile (!p(_)) - forget DRY principle - GC can't collect otherwise
-    var rest = this
-    while (!rest.isEmpty && p(rest.head) == isFlipped) rest = rest.tail
-    // private utility func to avoid `this` on stack (would be needed for the lazy arg)
-    if (rest.nonEmpty) Stream.filteredTail(rest, p, isFlipped)
-    else Stream.Empty
-  }
-
   /** Returns all the elements of this `Stream` that satisfy the predicate `p`
    * in a new `Stream` - i.e., it is still a lazy data structure. The order of
    * the elements is preserved
@@ -522,7 +512,15 @@ self =>
    * // produces
    * }}}
    */
-  override def filter(p: A => Boolean): Stream[A] = filterImpl(p, isFlipped = false) // This override is only left in 2.11 because of binary compatibility, see PR #3925
+  override def filter(p: A => Boolean): Stream[A] = {
+    // optimization: drop leading prefix of elems for which f returns false
+    // var rest = this dropWhile (!p(_)) - forget DRY principle - GC can't collect otherwise
+    var rest = this
+    while (!rest.isEmpty && !p(rest.head)) rest = rest.tail
+    // private utility func to avoid `this` on stack (would be needed for the lazy arg)
+    if (rest.nonEmpty) Stream.filteredTail(rest, p)
+    else Stream.Empty
+  }
 
   override final def withFilter(p: A => Boolean): StreamWithFilter = new StreamWithFilter(p)
 
@@ -878,7 +876,7 @@ self =>
    * @return A new `Stream` containing everything but the last element.  If your
    * `Stream` represents an infinite series, this method will not return.
    *
-   *  @throws `Predef.UnsupportedOperationException` if the stream is empty.
+   *  @throws UnsupportedOperationException if the stream is empty.
    */
   override def init: Stream[A] =
     if (isEmpty) super.init
@@ -946,7 +944,7 @@ self =>
    *
    * @param p the test predicate.
    * @return A new `Stream` representing the results of applying `p` to the
-   * oringal `Stream`.
+   * original `Stream`.
    *
    * @example {{{
    * // Assume we have a Stream that takes the first 20 natural numbers
@@ -1286,8 +1284,8 @@ object Stream extends SeqFactory[Stream] {
     else cons(start, range(start + step, end, step))
   }
 
-  private[immutable] def filteredTail[A](stream: Stream[A], p: A => Boolean, isFlipped: Boolean) = {
-    cons(stream.head, stream.tail.filterImpl(p, isFlipped))
+  private[immutable] def filteredTail[A](stream: Stream[A], p: A => Boolean) = {
+    cons(stream.head, stream.tail filter p)
   }
 
   private[immutable] def collectedTail[A, B, That](head: B, stream: Stream[A], pf: PartialFunction[A, B], bf: CanBuildFrom[Stream[A], B, That]) = {

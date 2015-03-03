@@ -298,7 +298,6 @@ abstract class SymbolTable extends macros.Universe
       case _ => false
     }
     if (pkgModule.isModule && !fromSource) {
-      // println("open "+pkgModule)//DEBUG
       openPackageModule(pkgModule, pkgClass)
     }
   }

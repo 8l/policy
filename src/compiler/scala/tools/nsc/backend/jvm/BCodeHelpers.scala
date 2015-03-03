@@ -361,8 +361,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       else if (sym == definitions.NullClass) RT_NULL
       else {
        val r = classBTypeFromSymbol(sym)
-        if (r.isNestedClass) innerClassBufferASM += r
-        r
+       if (r.isNestedClass) innerClassBufferASM += r
+       r
       }
     }
 
@@ -468,6 +468,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   trait BCAnnotGen extends BCInnerClassGen {
 
     import genASM.{ubytesToCharArray, arrEncode}
+    import bCodeAsmCommon.{shouldEmitAnnotation, isRuntimeVisible}
 
     /*
      *  can-multi-thread
@@ -532,17 +533,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       }
     }
 
-    /* Whether an annotation should be emitted as a Java annotation
-     *   .initialize: if 'annot' is read from pickle, atp might be un-initialized
-     *
-     * must-single-thread
-     */
-    private def shouldEmitAnnotation(annot: AnnotationInfo) =
-      annot.symbol.initialize.isJavaDefined &&
-      annot.matches(definitions.ClassfileAnnotationClass) &&
-      annot.args.isEmpty &&
-      !annot.matches(definitions.DeprecatedAttr)
-
     /*
      * In general,
      *   must-single-thread
@@ -562,7 +552,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = cw.visitAnnotation(descriptor(typ), true)
+        val av = cw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -574,7 +564,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = mw.visitAnnotation(descriptor(typ), true)
+        val av = mw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -586,7 +576,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = fw.visitAnnotation(descriptor(typ), true)
+        val av = fw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -601,7 +591,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
            annot <- annots) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val pannVisitor: asm.AnnotationVisitor = jmethod.visitParameterAnnotation(idx, descriptor(typ), true)
+        val pannVisitor: asm.AnnotationVisitor = jmethod.visitParameterAnnotation(idx, descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(pannVisitor, assocs)
       }
     }
@@ -623,13 +613,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   } // end of trait BCJGenSigGen
 
   trait BCForwardersGen extends BCAnnotGen with BCJGenSigGen {
-
-    // -----------------------------------------------------------------------------------------
-    // Static forwarders (related to mirror classes but also present in
-    // a plain class lacking companion module, for details see `isCandidateForForwarders`).
-    // -----------------------------------------------------------------------------------------
-
-    val ExcludedForwarderFlags = genASM.ExcludedForwarderFlags
 
     /* Adds a @remote annotation, actual use unknown.
      *
@@ -724,7 +707,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         (linkedClass.info.members collect { case sym if sym.name.isTermName => sym.name }).toSet
       }
 
-      for (m <- moduleClass.info.membersBasedOnFlags(ExcludedForwarderFlags, symtab.Flags.METHOD)) {
+      for (m <- moduleClass.info.membersBasedOnFlags(bCodeAsmCommon.ExcludedForwarderFlags, symtab.Flags.METHOD)) {
         if (m.isType || m.isDeferred || (m.owner eq definitions.ObjectClass) || m.isConstructor)
           debuglog(s"No forwarder for '$m' from $jclassName to '$moduleClass'")
         else if (conflictingNames(m.name))
@@ -805,32 +788,28 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       assert(moduleClass.companionClass == NoSymbol, moduleClass)
       innerClassBufferASM.clear()
       this.cunit = cunit
-      val moduleName = internalName(moduleClass) // + "$"
-      val mirrorName = moduleName.substring(0, moduleName.length() - 1)
 
-      val flags = (asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL)
+      val bType = mirrorClassClassBType(moduleClass)
       val mirrorClass = new asm.tree.ClassNode
       mirrorClass.visit(
         classfileVersion,
-        flags,
-        mirrorName,
+        bType.info.flags,
+        bType.internalName,
         null /* no java-generic-signature */,
         ObjectReference.internalName,
         EMPTY_STRING_ARRAY
       )
 
-      if (emitSource) {
-        mirrorClass.visitSource("" + cunit.source,
-                                null /* SourceDebugExtension */)
-      }
+      if (emitSource)
+        mirrorClass.visitSource("" + cunit.source, null /* SourceDebugExtension */)
 
-      val ssa = getAnnotPickle(mirrorName, moduleClass.companionSymbol)
+      val ssa = getAnnotPickle(bType.internalName, moduleClass.companionSymbol)
       mirrorClass.visitAttribute(if (ssa.isDefined) pickleMarkerLocal else pickleMarkerForeign)
       emitAnnotations(mirrorClass, moduleClass.annotations ++ ssa)
 
-      addForwarders(isRemote(moduleClass), mirrorClass, mirrorName, moduleClass)
+      addForwarders(isRemote(moduleClass), mirrorClass, bType.internalName, moduleClass)
 
-      innerClassBufferASM ++= classBTypeFromSymbol(moduleClass).info.memberClasses
+      innerClassBufferASM ++= bType.info.nestedClasses
       addInnerClassesASM(mirrorClass, innerClassBufferASM.toList)
 
       mirrorClass.visitEnd()
@@ -946,7 +925,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       constructor.visitMaxs(0, 0) // just to follow protocol, dummy arguments
       constructor.visitEnd()
 
-      innerClassBufferASM ++= classBTypeFromSymbol(cls).info.memberClasses
+      innerClassBufferASM ++= classBTypeFromSymbol(cls).info.nestedClasses
       addInnerClassesASM(beanInfoClass, innerClassBufferASM.toList)
 
       beanInfoClass.visitEnd()

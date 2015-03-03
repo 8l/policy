@@ -72,9 +72,7 @@ trait ScalacPatternExpanders {
      *  Unfortunately the MethodType does not carry the information of whether
      *  it was unapplySeq, so we have to funnel that information in separately.
      */
-    def unapplyMethodTypes(method: Type, isSeq: Boolean): Extractor = {
-      val whole    = firstParamType(method)
-      val result   = method.finalResultType
+    def unapplyMethodTypes(whole: Type, result: Type, isSeq: Boolean): Extractor = {
       val expanded = (
         if (result =:= BooleanTpe) Nil
         else typeOfMemberNamedGet(result) match {
@@ -110,8 +108,10 @@ trait ScalacPatternExpanders {
         err("Star pattern must correspond with varargs or unapplySeq")
       else if (elementArity < 0)
         arityError("not enough")
-      else if (elementArity > 0 && !extractor.hasSeq)
+      else if (elementArity > 0 && !isSeq)
         arityError("too many")
+      else if (settings.warnStarsAlign && isSeq && productArity > 0 && (elementArity > 0 || !isStar))
+        warn("A repeated case parameter or extracted sequence should be matched only by a sequence wildcard (_*).")
 
       aligned
     }
@@ -123,9 +123,10 @@ trait ScalacPatternExpanders {
       }
       val patterns  = newPatterns(args)
       val isUnapply = sel.symbol.name == nme.unapply
+
       val extractor = sel.symbol.name match {
-        case nme.unapply    => unapplyMethodTypes(fn.tpe, isSeq = false)
-        case nme.unapplySeq => unapplyMethodTypes(fn.tpe, isSeq = true)
+        case nme.unapply    => unapplyMethodTypes(firstParamType(fn.tpe), sel.tpe, isSeq = false)
+        case nme.unapplySeq => unapplyMethodTypes(firstParamType(fn.tpe), sel.tpe, isSeq = true)
         case _              => applyMethodTypes(fn.tpe)
       }
 

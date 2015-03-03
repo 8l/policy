@@ -112,10 +112,8 @@ abstract class BytecodeTest {
     classNode.jmethods find(_.name == name) getOrElse sys.error(s"Didn't find method '$name' in class '${classNode.name}'")
 
   protected def loadClassNode(name: String, skipDebugInfo: Boolean = true): ClassNode = {
-    val classBytes: InputStream = (for {
-      classRep <- classpath.findClass(name)
-      binary <- classRep.binary
-    } yield binary.input) getOrElse sys.error(s"failed to load class '$name'; classpath = $classpath")
+    val classBytes: InputStream = classpath.findClassFile(name).map(_.input)
+      .getOrElse(sys.error(s"failed to load class '$name'; classpath = $classpath"))
 
     val cr = new ClassReader(classBytes)
     val cn = new ClassNode()
@@ -134,7 +132,7 @@ abstract class BytecodeTest {
 
 object BytecodeTest {
   /** Parse `file` as a class file, transforms the ASM representation with `f`,
-   *  and overwrites the orginal file.
+   *  and overwrites the original file.
    */
   def modifyClassFile(file: JFile)(f: ClassNode => ClassNode) {
     val rfile = new reflect.io.File(file)

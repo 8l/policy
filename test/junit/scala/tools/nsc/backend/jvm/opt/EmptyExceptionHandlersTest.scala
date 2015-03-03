@@ -25,7 +25,7 @@ class EmptyExceptionHandlersTest {
       Op(RETURN)
     )
     assertTrue(convertMethod(asmMethod).handlers.length == 1)
-    LocalOpt.removeEmptyExceptionHandlers(asmMethod)
+    localOpt.removeEmptyExceptionHandlers(asmMethod)
     assertTrue(convertMethod(asmMethod).handlers.isEmpty)
   }
 
@@ -34,12 +34,8 @@ class EmptyExceptionHandlersTest {
     val handlers = List(ExceptionHandler(Label(1), Label(2), Label(2), Some(exceptionDescriptor)))
     val asmMethod = genMethod(handlers = handlers)(
       Label(1),          // nops only
-      Op(NOP),
-      Op(NOP),
       Jump(GOTO, Label(3)),
-      Op(NOP),
       Label(3),
-      Op(NOP),
       Jump(GOTO, Label(4)),
 
       Label(2),          // handler
@@ -50,7 +46,7 @@ class EmptyExceptionHandlersTest {
       Op(RETURN)
     )
     assertTrue(convertMethod(asmMethod).handlers.length == 1)
-    LocalOpt.removeEmptyExceptionHandlers(asmMethod)
+    localOpt.removeEmptyExceptionHandlers(asmMethod)
     assertTrue(convertMethod(asmMethod).handlers.isEmpty)
   }
 
