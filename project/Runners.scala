@@ -1,6 +1,7 @@
 package policy
 package building
 
+import psp.std._
 import sbt._, Keys._
 import psp.libsbt._
 
@@ -29,6 +30,10 @@ trait Runners {
 
   def classpathFiles(config: Configuration, project: Reference): TaskOf[Seq[File]] = fullClasspath in config in project map (_.files)
 
+  private implicit class SeqOps[A](val xs: Seq[A]) {
+    def preferring(p: A => Boolean): Seq[A] = xs sortWith ((x, y) => p(x) && !p(y))
+  }
+
   def testClasspathFiles: TaskOf[Seq[File]]     = classpathFiles(Test, 'compiler) map (_ filterNot isScalaJar) map (_ preferring (_.getPath contains "testlib"))
   def compilerClasspathFiles: TaskOf[Seq[File]] = classpathFiles(Compile, 'compiler)
   def compilerClasspathString: TaskOf[String]   = compilerClasspathFiles map (_ mkString pathSeparator)
@@ -39,7 +44,7 @@ trait Runners {
   def stdIncOptions  = sbtDefaultIncOptions withAntStyle true
 
   def sbtDefaultForkOptions = Def task ForkOptions(
-    javaHome         = javaHome.value,
+    javaHome         = Keys.javaHome.value,
     outputStrategy   = outputStrategy.value,
     bootJars         = Nil,
     workingDirectory = Some(baseDirectory.value),

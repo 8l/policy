@@ -7,7 +7,7 @@ import psp.libsbt._, Deps._, psp.std._
 object PolicyKeys {
   lazy val bootstrapId = settingKey[ModuleID]("module id of bootstrap compiler") in ThisBuild
   lazy val repl        = inputKey[Unit]("run policy repl")
-  lazy val jars        = inputKey[Classpath]("jars in given configuration")
+  lazy val jars        = inputKey[Keys.Classpath]("jars in given configuration")
 }
 
 object PolicyBuild extends sbt.Build with LibSbt {
